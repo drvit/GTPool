@@ -138,11 +138,36 @@
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
+    <Compile Include="Models\SearchNewsViewModel.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="Content\bootstrap.css" />
     <Content Include="Content\bootstrap.min.css" />
+    <Content Include="Content\cssbase.css">
+      <DependentUpon>cssbase.less</DependentUpon>
+    </Content>
+    <Content Include="Content\cssbase.min.css">
+      <DependentUpon>cssbase.css</DependentUpon>
+    </Content>
+    <Content Include="Content\cssfonts.css">
+      <DependentUpon>cssfonts.less</DependentUpon>
+    </Content>
+    <Content Include="Content\cssfonts.min.css">
+      <DependentUpon>cssfonts.css</DependentUpon>
+    </Content>
+    <Content Include="Content\cssreset.css">
+      <DependentUpon>cssreset.less</DependentUpon>
+    </Content>
+    <Content Include="Content\cssreset.min.css">
+      <DependentUpon>cssreset.css</DependentUpon>
+    </Content>
+    <Content Include="Content\sitebase.css">
+      <DependentUpon>sitebase.less</DependentUpon>
+    </Content>
+    <Content Include="Content\sitebase.min.css">
+      <DependentUpon>sitebase.css</DependentUpon>
+    </Content>
     <Content Include="Content\themes\base\accordion.css" />
     <Content Include="Content\themes\base\all.css" />
     <Content Include="Content\themes\base\autocomplete.css" />
@@ -179,7 +204,6 @@
     <Content Include="favicon.ico" />
     <Content Include="fonts\glyphicons-halflings-regular.svg" />
     <Content Include="Global.asax" />
-    <Content Include="Content\Site.css" />
     <Content Include="Scripts\angularjs\angular-animate.js" />
     <Content Include="Scripts\angularjs\angular-animate.min.js" />
     <Content Include="Scripts\angularjs\angular-aria.js" />
@@ -216,6 +240,38 @@
     <Content Include="Scripts\angularjs\angular-aria.min.js.map" />
     <Content Include="Scripts\angularjs\angular-animate.min.js.map" />
     <Content Include="Scripts\angularjs\angular.min.js.map" />
+    <Content Include="Content\cssreset.less" />
+    <Content Include="Content\cssreset.css.map">
+      <DependentUpon>cssreset.css</DependentUpon>
+    </Content>
+    <Content Include="Content\cssbase.less" />
+    <Content Include="Content\cssbase.css.map">
+      <DependentUpon>cssbase.css</DependentUpon>
+    </Content>
+    <Content Include="Content\cssfonts.less" />
+    <Content Include="Content\cssfonts.css.map">
+      <DependentUpon>cssfonts.css</DependentUpon>
+    </Content>
+    <Content Include="fonts\Roboto-Black.ttf" />
+    <Content Include="fonts\Roboto-BlackItalic.ttf" />
+    <Content Include="fonts\Roboto-Bold.ttf" />
+    <Content Include="fonts\Roboto-BoldItalic.ttf" />
+    <Content Include="fonts\Roboto-Italic.ttf" />
+    <Content Include="fonts\Roboto-Light.ttf" />
+    <Content Include="fonts\Roboto-LightItalic.ttf" />
+    <Content Include="fonts\Roboto-Medium.ttf" />
+    <Content Include="fonts\Roboto-MediumItalic.ttf" />
+    <Content Include="fonts\Roboto-Regular.ttf" />
+    <Content Include="fonts\Roboto-Thin.ttf" />
+    <Content Include="fonts\Roboto-ThinItalic.ttf" />
+    <Content Include="fonts\RobotoSlab-Bold.ttf" />
+    <Content Include="fonts\RobotoSlab-Light.ttf" />
+    <Content Include="fonts\RobotoSlab-Regular.ttf" />
+    <Content Include="fonts\RobotoSlab-Thin.ttf" />
+    <Content Include="Content\sitebase.less" />
+    <Content Include="Content\sitebase.css.map">
+      <DependentUpon>sitebase.css</DependentUpon>
+    </Content>
     <None Include="Scripts\jquery-1.10.2.intellisense.js" />
     <Content Include="Scripts\i18n\angular-locale_aa-dj.js" />
     <Content Include="Scripts\i18n\angular-locale_aa-er.js" />
@@ -972,6 +1028,8 @@
     <Content Include="Scripts\modernizr-2.6.2.js" />
     <Content Include="Scripts\respond.js" />
     <Content Include="Scripts\respond.min.js" />
+    <Content Include="Scripts\Site\sn-main.js" />
+    <Content Include="Scripts\Site\sn-searchnews.js" />
     <Content Include="Scripts\_references.js" />
     <Content Include="Web.config" />
     <Content Include="Web.Debug.config">
@@ -992,7 +1050,6 @@
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />
-    <Folder Include="Models\" />
   </ItemGroup>
   <ItemGroup>
     <Content Include="fonts\glyphicons-halflings-regular.woff" />
@@ -1019,7 +1076,7 @@
           <AutoAssignPort>True</AutoAssignPort>
           <DevelopmentServerPort>50540</DevelopmentServerPort>
           <DevelopmentServerVPath>/</DevelopmentServerVPath>
-          <IISUrl>http://localhost:50540/</IISUrl>
+          <IISUrl>http://localhost:8000/</IISUrl>
           <NTLMAuthentication>False</NTLMAuthentication>
           <UseCustomServer>False</UseCustomServer>
           <CustomServerUrl>
