@@ -3,9 +3,8 @@
 (function (sn, $, undefined) {
 
     sn.alwaysFocusOnSearch = function () {
-
-        $('html').click(function () {
-            $(this).animate({ border: "1px solid orange" }, "slow");
+        $('html').keydown(function () {
+            //$(this).animate({ border: "1px solid orange" }, "slow");
             $('#SearchQuery').focus();
         });
     };

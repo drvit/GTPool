@@ -26,18 +26,28 @@ namespace NewsSearch.Controllers
             return RedirectToAction("Index");
         }
 
-        private Dictionary<string, string> SearchNews(string p)
+        private IList<NewsResults> SearchNews(string query)
         {
-            return new Dictionary<string, string>
+            return new List<NewsResults>
             {
-                {"Source Name 1", "News head line 1"}, 
-                {"Source Name 1", "News head line 2"}, 
-                {"Source Name 1", "News head line 3"}, 
-                {"Source Name 2", "News head line 1"}, 
-                {"Source Name 2", "News head line 2"}, 
-                {"Source Name 2", "News head line 3"}, 
-                {"Source Name 2", "News head line 4"}, 
-                {"Source Name 2", "News head line 5"}
+                new NewsResults {Source = "Source Name 1", Headline = "News headline 1", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 1", Headline = "News headline 2", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 1", Headline = "News headline 3", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 2", Headline = "News headline 1", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 2", Headline = "News headline 2", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 2", Headline = "News headline 3", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 2", Headline = "News headline 4", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 2", Headline = "News headline 5", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 3", Headline = "News headline 1", Content = "News content related to the source and headline..."},
+                new NewsResults {Source = "Source Name 3", Headline = "News headline 2", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 3", Headline = "News headline 3", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 3", Headline = "News headline 4", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 4", Headline = "News headline 1", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 4", Headline = "News headline 2", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 4", Headline = "News headline 3", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 4", Headline = "News headline 4", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 4", Headline = "News headline 5", Content = "News content related to the source and headline..."}, 
+                new NewsResults {Source = "Source Name 5", Headline = "News headline 1", Content = "News content related to the source and headline..."}
             };
         }
 

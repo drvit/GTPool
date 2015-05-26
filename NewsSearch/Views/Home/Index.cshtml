@@ -1,4 +1,5 @@
-﻿@model NewsSearch.Models.SearchNewsViewModel
+﻿@using NewsSearch.Models
+@model NewsSearch.Models.SearchNewsViewModel
 
 @{
     ViewBag.Title = "Home Page";
@@ -13,6 +14,24 @@
         </fieldset>
     }
 </div>
+
+@if (Model.Results != null)
+{
+    <div class="newsResults">
+        @foreach (var source in Model.Results.Select(x => new { x.Source }).GroupBy(x => x.Source).OrderBy(x => x.Key))
+        {
+            <ul>
+                <li class="newsSource">@source.Key</li>
+                @foreach (var news in Model.Results.Where(news => news.Source == source.Key))
+                {
+                    <li class="newsHeadline">@news.Headline</li>
+                    <li class="newsContent">@news.Content</li>
+                }
+            </ul>
+        }
+    </div>
+}
+
 
 @section scripts
 {

@@ -10,11 +10,13 @@
 <body>
 
     <div class="body-content">
-        @RenderBody()
+        <div class="main-content">
+            @RenderBody()
+        </div>
+        <footer>
+            <p>&copy; @DateTime.Now.Year - </p>
+        </footer>
     </div>
-    <footer>
-        <p>&copy; @DateTime.Now.Year - </p>
-    </footer>
 
     @Scripts.Render("~/bundles/jquery")
     @Scripts.Render("~/bundles/sitescripts")
