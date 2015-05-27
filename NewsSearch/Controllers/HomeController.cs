@@ -18,7 +18,7 @@ namespace NewsSearch.Controllers
         [HttpPost]
         public ActionResult Index(SearchNewsViewModel model)
         {
-            CallApi.Execute(model.SearchQuery).Wait();
+            var result = CallApi.Execute(model.SearchQuery);
 
             if (ModelState.IsValid)
             {

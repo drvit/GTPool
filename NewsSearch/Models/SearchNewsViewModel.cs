@@ -5,12 +5,14 @@ using System.Web;
 
 namespace NewsSearch.Models
 {
+    [Serializable]
     public class SearchNewsViewModel
     {
         public string SearchQuery { get; set; }
         public IList<NewsResults> Results { get; set; } 
     }
 
+    [Serializable]
     public class NewsResults
     {
         public string Source { get; set; }

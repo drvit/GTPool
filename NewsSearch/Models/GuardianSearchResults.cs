@@ -5,6 +5,13 @@ using System.Web;
 
 namespace NewsSearch.Models
 {
+    [Serializable]
+    public class SearchResponse
+    {
+        public GuardianSearchResult Response { get; set; }
+    }
+
+    [Serializable]
     public class GuardianSearchResult : ISearchResponse
     {
         public string Status { get; set; }
@@ -14,9 +21,10 @@ namespace NewsSearch.Models
         public int CurrentPage { get; set; }
         public int Pages { get; set; }
         public string OrderBy { get; set; }
-        public IList<GuardianResult> Results { get; set; }
+        public GuardianResult[] Results { get; set; }
     }
 
+    [Serializable]
     public class GuardianResult : IResult
     {
         public string SectionId { get; set; }
