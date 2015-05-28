@@ -7,14 +7,15 @@ using System.Threading.Tasks;
 using System.Web;
 using System.Web.Script.Serialization;
 using NewsSearch.Models;
+using AutoMapper;
 
 namespace NewsSearch.Controllers
 {
     public static class CallApi
     {
-        public static SearchResponse Execute(string query)
+        public static GuardianSearchResult Execute(string query)
         {
-            SearchResponse searchResult = null;
+            GuardianSearchResult searchResult = null;
             using (var client = new HttpClient())
             {
                 client.BaseAddress = new Uri("http://content.guardianapis.com/");
@@ -35,8 +36,19 @@ namespace NewsSearch.Controllers
                     //searchResult = response.Content.ReadAsAsync<SearchResponse>().Result;
 
                     var jsonSerializer = new JavaScriptSerializer();
-                    searchResult =
-                        jsonSerializer.Deserialize<SearchResponse>(response.Content.ReadAsStringAsync().Result);
+                    //searchResult =
+                    //    jsonSerializer.Deserialize<SearchResponse>(response.Content.ReadAsStringAsync().Result);
+
+
+                    var result = jsonSerializer.DeserializeObject(response.Content.ReadAsStringAsync().Result) as Dictionary<string, object>;
+
+                    if (result != null && result.ContainsKey("response"))
+                    {
+                        var temp = new Dictionary<string, object>((Dictionary<string, object>) result["response"],
+                            StringComparer.InvariantCultureIgnoreCase);
+
+                        searchResult = Mapper.Map<Dictionary<string, object>, GuardianSearchResult>(temp);
+                    }
                 }
             }
 

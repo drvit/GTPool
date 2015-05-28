@@ -14,6 +14,12 @@ namespace NewsSearch.Models
     [Serializable]
     public class GuardianSearchResult : ISearchResponse
     {
+        public GuardianSearchResult() { }
+
+        public void LoadResults(IDictionary<string, object> results)
+        {
+        }
+
         public string Status { get; set; }
         public int Total { get; set; }
         public int StartIndex { get; set; }
@@ -21,7 +27,7 @@ namespace NewsSearch.Models
         public int CurrentPage { get; set; }
         public int Pages { get; set; }
         public string OrderBy { get; set; }
-        public GuardianResult[] Results { get; set; }
+        public List<GuardianResult> Results { get; set; }
     }
 
     [Serializable]
