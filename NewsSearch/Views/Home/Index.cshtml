@@ -1,5 +1,4 @@
-﻿@using NewsSearch.Models
-@model NewsSearch.Models.SearchNewsViewModel
+﻿@model NewsSearch.Models.SearchNewsViewModel
 
 @{
     ViewBag.Title = "Home Page";
@@ -15,17 +14,17 @@
     }
 </div>
 
-@if (Model.Results != null)
+@if (Model.SearchResults != null)
 {
     <div class="newsResults">
-        @foreach (var source in Model.Results.Select(x => new { x.Source }).GroupBy(x => x.Source).OrderBy(x => x.Key))
+        @foreach (var source in Model.SearchResults.OrderBy(x => x.SourceName))
         {
             <ul>
-                <li class="newsSource">@source.Key</li>
-                @foreach (var news in Model.Results.Where(news => news.Source == source.Key))
+                <li class="newsSource">@source.SourceName</li>
+                @foreach (var news in source.Results.OrderByDescending(x => x.PublicationDate))
                 {
-                    <li class="newsHeadline">@news.Headline</li>
-                    <li class="newsContent">@news.Content</li>
+                    <li class="newsHeadline">@news.PublicationDate.ToShortDateString()</li>
+                    <li class="newsContent"><a href="@news.WebUrl" target="_blank">@news.Title</a></li>
                 }
             </ul>
         }

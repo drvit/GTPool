@@ -18,13 +18,19 @@ namespace NewsSearch.Controllers
         [HttpPost]
         public ActionResult Index(SearchNewsViewModel model)
         {
-            var result = CallApi.Execute(model.SearchQuery);
+            var searchResults = new List<QueriableSource>();
+            var gsearch = new GuardianSearch();
+
+            CallApi.Execute(gsearch, model.SearchQuery);
+
+            searchResults.Add(gsearch);
 
             if (ModelState.IsValid)
             {
-                model.Results = SearchNews(model.SearchQuery);
+                model.SearchResults = searchResults;
                 return View(model);
             }
+
             return RedirectToAction("Index");
         }
 
