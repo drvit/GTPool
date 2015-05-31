@@ -18,12 +18,16 @@ namespace NewsSearch.Controllers
         [HttpPost]
         public ActionResult Index(SearchNewsViewModel model)
         {
-            var searchResults = new List<QueriableSource>();
-            var gsearch = new GuardianSearch();
+            //var searchResults = new List<QueryableSource<IResult>>();
+            var searchResults = new List<QueryableSource>();
+            var guardian = new GuardianSearch();
+            //var socialMention = new SocialMentionSearch();
 
-            CallApi.Execute(gsearch, model.SearchQuery);
+            ApiHelper.Execute(guardian, model.SearchQuery);
+            //ApiHelper.Execute(socialMention, model.SearchQuery);
 
-            searchResults.Add(gsearch);
+            searchResults.Add(guardian);
+            //searchResults.Add(socialMention);
 
             if (ModelState.IsValid)
             {
@@ -34,31 +38,10 @@ namespace NewsSearch.Controllers
             return RedirectToAction("Index");
         }
 
-        private IList<NewsResults> SearchNews(string query)
-        {
-            return new List<NewsResults>
-            {
-                new NewsResults {Source = "Source Name 1", Headline = "News headline 1", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 1", Headline = "News headline 2", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 1", Headline = "News headline 3", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 2", Headline = "News headline 1", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 2", Headline = "News headline 2", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 2", Headline = "News headline 3", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 2", Headline = "News headline 4", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 2", Headline = "News headline 5", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 3", Headline = "News headline 1", Content = "News content related to the source and headline..."},
-                new NewsResults {Source = "Source Name 3", Headline = "News headline 2", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 3", Headline = "News headline 3", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 3", Headline = "News headline 4", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 4", Headline = "News headline 1", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 4", Headline = "News headline 2", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 4", Headline = "News headline 3", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 4", Headline = "News headline 4", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 4", Headline = "News headline 5", Content = "News content related to the source and headline..."}, 
-                new NewsResults {Source = "Source Name 5", Headline = "News headline 1", Content = "News content related to the source and headline..."}
-            };
-        }
 
+        
+        
+        
         public ActionResult About()
         {
             ViewBag.Message = "Your application description page.";

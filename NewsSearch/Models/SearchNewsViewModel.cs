@@ -8,13 +8,6 @@ namespace NewsSearch.Models
     public class SearchNewsViewModel
     {
         public string SearchQuery { get; set; }
-        public IList<QueriableSource> SearchResults { get; set; } 
-    }
-
-    public class NewsResults
-    {
-        public string Source { get; set; }
-        public string Headline { get; set; }
-        public string Content { get; set; }
+        public IList<QueryableSource> SearchResults { get; set; } 
     }
 }

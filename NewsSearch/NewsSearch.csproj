@@ -152,11 +152,16 @@
     </Compile>
     <Compile Include="Infrastructure\Automapper\GuardianProfile.cs" />
     <Compile Include="Infrastructure\Automapper\InitializeProfiles.cs" />
+    <Compile Include="Infrastructure\ExtensionsHelper.cs" />
+    <Compile Include="Infrastructure\Automapper\SocialMentionProfile.cs" />
     <Compile Include="Models\GuardianSearch.cs" />
     <Compile Include="Models\IResult.cs" />
-    <Compile Include="Models\QueriableSource.cs" />
+    <Compile Include="Models\ISourceEntity.cs" />
+    <Compile Include="Models\QueryableSource.cs" />
     <Compile Include="Models\SearchNewsViewModel.cs" />
-    <Compile Include="Models\SearchResult.cs" />
+    <Compile Include="Models\SourceResult.cs" />
+    <Compile Include="Models\SocialMentionSearch.cs" />
+    <Compile Include="Models\TestClass.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>
