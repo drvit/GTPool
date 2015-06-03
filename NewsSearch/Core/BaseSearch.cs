@@ -1,15 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
-namespace NewsSearch.Models
+namespace NewsSearch.Core
 {
-    public abstract class QueryableSource<TResult> : ISourceEntity
-        where TResult : class, IResult
-    //public abstract class QueryableSource : ISourceEntity
+    public abstract class BaseSearch<TResult> : ISearch
+        where TResult : BaseResult
     {
-        protected QueryableSource(bool lazyLoading, string apiBaseAddress, string apiQueryString, string sourceName)
+        protected BaseSearch(bool lazyLoading, string apiBaseAddress, string apiQueryString, string sourceName)
         {
             LazyLoading = lazyLoading;
             ApiBaseAddress = apiBaseAddress;
@@ -39,7 +36,8 @@ namespace NewsSearch.Models
             set
             {
                 _apiResponse = value;
-                if (!LazyLoading)
+
+                if (!LazyLoading && !_apiResponse.ContainsKey("error"))
                 {
                     _responseLoaded = true;
                     LoadResponse();
@@ -138,8 +136,8 @@ namespace NewsSearch.Models
             set { _orderBy = value; }
         }
 
-        private List<TResult> _results;
-        public List<TResult> Results
+        private IEnumerable<TResult> _results;
+        public virtual IEnumerable<TResult> Results
         {
             get
             {

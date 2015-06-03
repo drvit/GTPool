@@ -1,23 +1,21 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 using AutoMapper;
 
-namespace NewsSearch.Models
+namespace NewsSearch.Core.Sources
 {
-    public class SocialMentionSearch : QueryableSource
+    public class GuardianSearch : BaseSearch<GuardianResult>
     {
         // TODO: create a factory to create the Search Entities
-        public SocialMentionSearch()
+        public GuardianSearch()
             : base(true,
-                "http://socialmention.com/", 
-                "search?q={0}", 
-                "Social Mention")
+                "http://content.guardianapis.com/", 
+                "search?q={0}&api-key=jhn82w8ge5n86jvghm4ud6tm", 
+                "The Guardian")
         {
         }
 
-        public SocialMentionSearch(bool lazyLoading, string apiBaseAddress, string apiQueryString, string sourceName) 
+        public GuardianSearch(bool lazyLoading, string apiBaseAddress, string apiQueryString, string sourceName)
             : base(lazyLoading, apiBaseAddress, apiQueryString, sourceName)
         {
         }
@@ -34,8 +32,5 @@ namespace NewsSearch.Models
         }
     }
 
-    //public class SocialMentionSearchResult : SourceResult
-    //{
-
-    //}
+    public class GuardianResult : BaseResult { }
 }

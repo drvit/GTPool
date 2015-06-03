@@ -145,23 +145,24 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
-    <Compile Include="Controllers\CallApi.cs" />
+    <Compile Include="Core\Services\ApiHelper.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Core\Sources\YouTubeSearch.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
     <Compile Include="Infrastructure\Automapper\GuardianProfile.cs" />
     <Compile Include="Infrastructure\Automapper\InitializeProfiles.cs" />
+    <Compile Include="Infrastructure\Automapper\YouTubeProfile.cs" />
     <Compile Include="Infrastructure\ExtensionsHelper.cs" />
     <Compile Include="Infrastructure\Automapper\SocialMentionProfile.cs" />
-    <Compile Include="Models\GuardianSearch.cs" />
-    <Compile Include="Models\IResult.cs" />
-    <Compile Include="Models\ISourceEntity.cs" />
-    <Compile Include="Models\QueryableSource.cs" />
-    <Compile Include="Models\SearchNewsViewModel.cs" />
-    <Compile Include="Models\SourceResult.cs" />
-    <Compile Include="Models\SocialMentionSearch.cs" />
-    <Compile Include="Models\TestClass.cs" />
+    <Compile Include="Core\Sources\GuardianSearch.cs" />
+    <Compile Include="Core\IResult.cs" />
+    <Compile Include="Core\ISearch.cs" />
+    <Compile Include="Core\BaseSearch.cs" />
+    <Compile Include="Core\BaseResult.cs" />
+    <Compile Include="Models\SearchViewModel.cs" />
+    <Compile Include="Core\Sources\SocialMentionSearch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <ItemGroup>

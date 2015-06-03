@@ -3,6 +3,9 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using NewsSearch.Core;
+using NewsSearch.Core.Services;
+using NewsSearch.Core.Sources;
 using NewsSearch.Models;
 
 namespace NewsSearch.Controllers
@@ -11,23 +14,25 @@ namespace NewsSearch.Controllers
     {
         public ActionResult Index()
         {
-            var model = new SearchNewsViewModel();
+            var model = new SearchViewModel();
             return View(model);
         }
 
         [HttpPost]
-        public ActionResult Index(SearchNewsViewModel model)
+        public ActionResult Index(SearchViewModel model)
         {
-            //var searchResults = new List<QueryableSource<IResult>>();
-            var searchResults = new List<QueryableSource>();
+            var searchResults = new List<Tuple<ISearch, IEnumerable<BaseResult>>>();
             var guardian = new GuardianSearch();
-            //var socialMention = new SocialMentionSearch();
+            var socialMention = new SocialMentionSearch();
+            var youtube = new YouTubeSearch();
 
             ApiHelper.Execute(guardian, model.SearchQuery);
-            //ApiHelper.Execute(socialMention, model.SearchQuery);
+            ApiHelper.Execute(socialMention, model.SearchQuery);
+            ApiHelper.Execute(youtube, model.SearchQuery);
 
-            searchResults.Add(guardian);
-            //searchResults.Add(socialMention);
+            searchResults.Add(new Tuple<ISearch, IEnumerable<BaseResult>>(guardian, guardian.Results));
+            searchResults.Add(new Tuple<ISearch, IEnumerable<BaseResult>>(socialMention, socialMention.Results));
+            searchResults.Add(new Tuple<ISearch, IEnumerable<BaseResult>>(youtube, youtube.Results));
 
             if (ModelState.IsValid)
             {
@@ -38,9 +43,6 @@ namespace NewsSearch.Controllers
             return RedirectToAction("Index");
         }
 
-
-        
-        
         
         public ActionResult About()
         {

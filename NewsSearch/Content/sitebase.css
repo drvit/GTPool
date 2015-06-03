@@ -57,6 +57,14 @@ footer p {
   /*max-width: 1024px;
     margin: auto;*/
 }
+.newsResults a {
+  text-decoration: none;
+  color: #4747c3;
+}
+.newsResults a:hover {
+  color: #0000ff;
+  text-decoration: underline;
+}
 .newsResults ul {
   margin-top: 20px;
   overflow: auto;
@@ -72,9 +80,21 @@ footer p {
   clear: left;
   float: left;
 }
-.newsResults ul .newsContent {
+.newsResults ul .newsTitle {
   margin-left: 15px;
   font: 16px/150% "Roboto-LightItalic";
   float: left;
+}
+.newsResults ul .newsSubSource {
+  float: left;
+  margin-left: 10px;
+  font-family: "Roboto-bold";
+  font-size: x-small;
+}
+.newsResults ul .newsSubSource a {
+  color: #7676c8;
+}
+.newsResults ul .newsSubSource a:hover {
+  color: #1c1c5f;
 }
 /*# sourceMappingURL=sitebase.css.map */

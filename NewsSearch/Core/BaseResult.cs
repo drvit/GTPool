@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 
-namespace NewsSearch.Models
+namespace NewsSearch.Core
 {
-    public class SourceResult : IResult
+    public abstract class BaseResult : IResult
     {
         public string Title { get; set; }
         public DateTime PublicationDate { get; set; }
         public string WebUrl { get; set; }
+        public string Description { get; set; }
         public string SubSourceName { get; set; }
         public string SubSourceFavIcon { get; set; }
         public string SubSourceDomain { get; set; }

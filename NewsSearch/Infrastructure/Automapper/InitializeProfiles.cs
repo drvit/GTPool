@@ -1,8 +1,4 @@
 ﻿using AutoMapper;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Web;
 
 namespace NewsSearch.Infrastructure.Automapper
 {
@@ -10,7 +6,12 @@ namespace NewsSearch.Infrastructure.Automapper
     {
         public static void CustomProfiles()
         {
-            Mapper.Initialize(x => x.AddProfile<SearchProfile>());
+            Mapper.Initialize(x =>
+            {
+                x.AddProfile<GuardianProfile>();
+                x.AddProfile<SocialMentionProfile>();
+                x.AddProfile<YouTubeProfile>();
+            });
         }
     }
 }

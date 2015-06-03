@@ -1,15 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
-namespace NewsSearch.Models
+namespace NewsSearch.Core
 {
     public interface IResult
     {
         string Title { get; set; }
         DateTime PublicationDate { get; set; }
         string WebUrl { get; set; }
+        string Description { get; set; }
 
         string SubSourceName { get; set; }
         string SubSourceFavIcon { get; set; }

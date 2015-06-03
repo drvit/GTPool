@@ -1,14 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Web;
 using AutoMapper;
-using NewsSearch.Models;
-using NewsSearch.Infrastructure;
+using NewsSearch.Core.Sources;
 
 namespace NewsSearch.Infrastructure.Automapper
 {
-    public class SearchProfile : Profile
+    public class GuardianProfile : Profile
     {
         protected override void Configure()
         {
@@ -22,16 +20,16 @@ namespace NewsSearch.Infrastructure.Automapper
                 .ForMember(dest => dest.OrderBy, opts => opts.MapFrom(src => src.GetValueForKey("OrderBy")))
                 .ForMember(dest => dest.Results, opts => opts.MapFrom(src => (object[])src.GetValueForKey("Results")));
 
-            CreateMap<object[], List<SourceResult>>()
+            CreateMap<object[], IEnumerable<GuardianResult>>()
                 .ConvertUsing(
                     src =>
                         src.Select(x =>
-                            Mapper.Map<Dictionary<string, object>, SourceResult>(
+                            Mapper.Map<Dictionary<string, object>, GuardianResult>(
                                 new Dictionary<string, object>((Dictionary<string, object>)x,
                                     StringComparer.InvariantCultureIgnoreCase))).ToList());
 
-            CreateMap<Dictionary<string, object>, SourceResult>()
-                .ForMember(dest => dest.SectionId, opts => opts.MapFrom(src => TestSource(opts.GetType(), src.GetValueForKey("SectionId"))))
+            CreateMap<Dictionary<string, object>, GuardianResult>()
+                .ForMember(dest => dest.SectionId, opts => opts.MapFrom(src => src.GetValueForKey("SectionId")))
                 .ForMember(dest => dest.Title, opts => opts.MapFrom(src => src.GetValueForKey("WebTitle")))
                 .ForMember(dest => dest.PublicationDate, opts => opts.MapFrom(src => src.GetValueForKey("WebPublicationDate")))
                 .ForMember(dest => dest.Id, opts => opts.MapFrom(src => src.GetValueForKey("Id")))
@@ -40,12 +38,5 @@ namespace NewsSearch.Infrastructure.Automapper
                 .ForMember(dest => dest.SectionName, opts => opts.MapFrom(src => src.GetValueForKey("SectionName")));
 
         }
-
-        private static object TestSource(Type sourceType, object value)
-        {
-            return value;
-        }
-
-
     }
 }
