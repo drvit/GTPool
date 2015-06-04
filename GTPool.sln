@@ -11,7 +11,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NewsSearch.Tests", "NewsSea
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GTPool.Tests", "GTPool.Tests\GTPool.Tests.csproj", "{361BEC45-8A6A-45B8-B7B5-8385DFEDBE75}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Console", "Console\Console.csproj", "{7D35BB87-E45C-44AD-9115-77996A718BA1}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "GTPool.App", "GTPool.App\GTPool.App.csproj", "{C91A8039-4E65-431D-AB03-5A3197357D72}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -35,10 +35,10 @@ Global
 		{361BEC45-8A6A-45B8-B7B5-8385DFEDBE75}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{361BEC45-8A6A-45B8-B7B5-8385DFEDBE75}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{361BEC45-8A6A-45B8-B7B5-8385DFEDBE75}.Release|Any CPU.Build.0 = Release|Any CPU
-		{7D35BB87-E45C-44AD-9115-77996A718BA1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
-		{7D35BB87-E45C-44AD-9115-77996A718BA1}.Debug|Any CPU.Build.0 = Debug|Any CPU
-		{7D35BB87-E45C-44AD-9115-77996A718BA1}.Release|Any CPU.ActiveCfg = Release|Any CPU
-		{7D35BB87-E45C-44AD-9115-77996A718BA1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{C91A8039-4E65-431D-AB03-5A3197357D72}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{C91A8039-4E65-431D-AB03-5A3197357D72}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{C91A8039-4E65-431D-AB03-5A3197357D72}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{C91A8039-4E65-431D-AB03-5A3197357D72}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

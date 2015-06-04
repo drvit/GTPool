@@ -1,0 +1,112 @@
+﻿html {
+    height: 100%;
+}
+
+body {
+    height: 100%;
+    overflow-y: scroll;
+}
+
+.body-content {
+    min-height: 100%;
+    position: relative;
+    max-width: 2048px;
+    margin: auto;
+}
+
+.main-content {
+    position: relative;
+    padding-bottom: 100px;
+    min-width: 550px;
+    margin: 0 50px;
+}
+
+footer {
+    height: 100px;
+    min-width: 550px;
+    margin: auto;
+    position: absolute;
+    bottom: 0;
+    left: 50px;
+    right: 50px;
+    p {
+        border-top: 1px solid #6b6ba3;
+        margin-top: 50px;
+    }
+}
+
+.searchContainer {
+    text-align: center;
+    padding: 80px 0 50px 0;
+
+    input {
+        font-size: 22px;
+        padding: 4px 6px;
+    }
+
+    input[type=text] {
+        width: 400px;
+        border: 1px solid #6b6ba3
+    }
+
+    input[type=submit] {
+        background-color: #6b6ba3;
+        color: #dedede;
+        border: 1px solid #6b6ba3;
+        margin-left: 5px;
+        width: 100px;
+    }
+
+    input[type=submit]:hover {
+        cursor: pointer;
+        color: #fbfbfb;
+    }
+}
+
+.newsResults {
+    /*max-width: 1024px;
+    margin: auto;*/
+
+    a {
+        text-decoration: none;
+        color: #4747c3;
+    }
+
+    a:hover {
+        color: #0000ff;
+        text-decoration: underline;
+    }
+
+    ul {
+        margin-top: 20px;
+        overflow: auto;
+        li {
+            /*border: 1px dotted cyan;*/
+        }
+        .newsSource {
+            font: 700 22px/150% "RobotoSlab-Bold";
+        }
+        .newsHeadline {
+            font: 16px/150% "RobotoSlab-Light";
+            clear: left;
+            float: left;
+        }
+        .newsTitle {
+            margin-left: 15px;
+            font: 16px/150% "Roboto-LightItalic";
+            float: left;
+        }
+        .newsSubSource {
+            float: left;
+            margin-left: 10px;
+            font-family: "Roboto-bold";
+            font-size: x-small;
+            a {
+                color: #7676c8;
+            }
+            a:hover {
+                color: #1c1c5f;
+            }
+        }
+    }
+}
