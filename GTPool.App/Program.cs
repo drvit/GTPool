@@ -7,7 +7,7 @@ namespace GTPool.App
     {
         private static void Main(string[] args)
         {
-            Console.Write("What exercise to Run? (1-8): ");
+            Console.Write("What exercise to Run? (1-9): ");
             var exercise = Console.ReadLine();
             int n;
 
@@ -41,6 +41,15 @@ namespace GTPool.App
                         break;
                     case 8:
                         Exercise8.Run();
+                        break;
+                    case 9:
+                        Exercise9.Run();
+                        break;
+                    case 91:
+                        Exercise91.Run();
+                        break;
+                    case 10:
+                        Exercise10.Run();
                         break;
                     default:
                         Console.WriteLine("Wrong exercise number!");
