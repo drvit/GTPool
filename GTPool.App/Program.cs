@@ -1,24 +1,56 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Security.Cryptography;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
 using GTPool.App.ThreadExercises;
 
 namespace GTPool.App
 {
     class Program
     {
-        static void Main(string[] args)
+        private static void Main(string[] args)
         {
-            //Exercise1.Run();
-            //Exercise2.Run();
-            //Exercise3.Run();
-            //Exercise4.Run();
-            Exercise5.Run(); // Same as 4, but improved - Good one
+            Console.Write("What exercise to Run? (1-8): ");
+            var exercise = Console.ReadLine();
+            int n;
 
+            if (int.TryParse(exercise, out n))
+            {
+                switch (n)
+                {
+                    case 1:
+                        Exercise1.Run();
+                        break;
+                    case 2:
+                        Exercise2.Run();
+                        break;
+                    case 3:
+                        Exercise3.Run();
+                        break;
+                    case 4:
+                        Exercise4.Run();
+                        break;
+                    case 5:
+                        Exercise5.Run();
+                        break;
+                    case 6:
+                        Exercise6.Run();
+                        break;
+                    case 7:
+                        Exercise7.Run();
+                        break;
+                    case 71:
+                        Exercise71.Run();
+                        break;
+                    case 8:
+                        Exercise8.Run();
+                        break;
+                    default:
+                        Console.WriteLine("Wrong exercise number!");
+                        break;
+                }
+            }
+            else
+            {
+                Console.WriteLine("Invalid input! Try again...");
+            }
         }
     }
 }

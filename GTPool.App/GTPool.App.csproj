@@ -42,6 +42,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Exercise6.cs" />
     <Compile Include="ThreadExercises\Exercise4.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -50,6 +51,8 @@
     <Compile Include="ThreadExercises\Exercise2.cs" />
     <Compile Include="ThreadExercises\Exercise3.cs" />
     <Compile Include="ThreadExercises\Exercise5.cs" />
+    <Compile Include="ThreadExercises\Exercise7.cs" />
+    <Compile Include="ThreadExercises\Exercise8.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />
