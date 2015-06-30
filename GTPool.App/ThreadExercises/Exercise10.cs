@@ -17,7 +17,7 @@ namespace GTPool.App.ThreadExercises
         public static void Run()
         {
             var request = WebRequest.Create(PageUrl);
-            var state = new RequestResponseState {Request = request};
+            var state = new RequestResponseState { Request = request };
 
             // Lock the object we'll use for waiting now, to make
             // sure we don't (by some fluke) do everything in the other threads

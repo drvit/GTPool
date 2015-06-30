@@ -10,15 +10,15 @@ namespace GTPool.Tests.Sandbox
         [TestMethod] 
         public void TestSimpleThreadClass()
         {
-            var threadJobClass = new SimpleThread();
-            Assert.IsInstanceOfType(threadJobClass, typeof(SimpleThread));
+            var threadJobClass = new ProducerConsumer();
+            Assert.IsInstanceOfType(threadJobClass, typeof(ProducerConsumer));
         }
 
         [TestMethod]
         public void TestSimpleThreadReturnsResult()
         {
             IDictionary<string, int> results = new Dictionary<string, int>();
-            SimpleThread.Main(results);
+            //ProducerConsumer.Main(results);
 
             Assert.IsNotNull(results);
         }
