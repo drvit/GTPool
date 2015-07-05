@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Threading;
@@ -12,7 +13,7 @@ namespace GTPool.Sandbox
         {
             var cars = new [] 
             {
-                new object[] {"Fusca", 15000}, 
+                new object[] {"Fusca", 6000}, 
                 new object[] {"Corcel", 7000}, 
                 new object[] {"Maverick", 1000}, 
                 new object[] {"Opala", 4000},
@@ -28,6 +29,7 @@ namespace GTPool.Sandbox
             var pman = new PoolManager();
             for (var t = 0; t < cars.Count(); t++)
             {
+                Thread.Sleep(1000);
                 pman.AddJob(job, new object[] { t, string.Empty });
             }
 
@@ -38,7 +40,26 @@ namespace GTPool.Sandbox
 
             pman.AddJob(job2, new object[] {string.Empty});
 
-            
+
+            Thread.Sleep(30000);
+
+            Action<string> job3 = (wt) =>
+            {
+                Thread.Sleep(3000);
+                Console.WriteLine("I have got an other car that is not in the list. :) - WT: " + wt);
+            };
+
+            pman.AddJob(job3, new object[] { string.Empty });
+
+
+            Action<string> job4 = (wt) =>
+            {
+                Thread.Sleep(3000);
+                Console.WriteLine("My other car is a MERCEDES. - WT: " + wt);
+            };
+
+            pman.AddJob(job4, new object[] { string.Empty });
+
         }
     }
     
@@ -84,21 +105,25 @@ namespace GTPool.Sandbox
         private readonly int _minThreads;
         private readonly int _maxThreads;
         private readonly int _idleTime;
+        private readonly int _minIdleTime;
         private int _numberOfActiveThreads;
-        private static readonly Random ThreadId = new Random();
+        private int _threadId;
+        private bool _isThreadCreation;
 
         public ProducerConsumer()
-            : this(1, 10, 10000)
+            : this(2, 10, 10000, 1)
         {
         }
 
-        public ProducerConsumer(int minThreads, int maxThreads, int idleTime)
+        public ProducerConsumer(int minThreads, int maxThreads, int idleTime, int minIdleTime)
         {
             _maxThreads = maxThreads;
             _idleTime = idleTime;
+            _minIdleTime = minIdleTime;
             _minThreads = minThreads;
+            _threadId = new Random().Next(10, 99);
 
-            LoadThreadQueue(minThreads);
+            LoadThreadQueue(maxThreads);
         }
 
         private void LoadThreadQueue(int maxThreads, string wt)
@@ -109,13 +134,14 @@ namespace GTPool.Sandbox
 
         private void LoadThreadQueue(int maxThreads)
         {
+            IsThreadCreation = true;
+
             while (NumberOfActiveThreads < maxThreads)
             {
                 try
                 {
                     NumberOfActiveThreads++;
-
-                    var threadName = "__thread_" + ThreadId.Next(10000, 99999) + "__";
+                    var threadName = NextThreadName;
 
                     var thread = new Thread(JobInvoker)
                     {
@@ -132,6 +158,8 @@ namespace GTPool.Sandbox
                     NumberOfActiveThreads--;
                 }
             }
+
+            IsThreadCreation = false;
         }
 
         private void JobInvoker(object threadName)
@@ -142,7 +170,7 @@ namespace GTPool.Sandbox
 
                 if (job == null)
                 {
-                    if (NumberOfActiveThreads > _minThreads)
+                    if (!IsMinNumberOfActiveThreads && !IsThreadCreation)
                         break;
                 }
                 else
@@ -155,6 +183,18 @@ namespace GTPool.Sandbox
 
             NumberOfActiveThreads--;
             Console.WriteLine("Thread ended " + threadName);
+        }
+
+        private string NextThreadName
+        {
+            get
+            {
+                lock (_counterLock)
+                {
+                    _threadId++;
+                    return "__thread_" + _threadId + "__";
+                }
+            }
         }
 
         private int NumberOfActiveThreads
@@ -175,13 +215,38 @@ namespace GTPool.Sandbox
             }
         }
 
+        private bool IsThreadCreation
+        {
+            get
+            {
+                lock (_counterLock)
+                {
+                    return _isThreadCreation;
+                }
+            }
+            set
+            {
+                lock (_counterLock)
+                {
+                    _isThreadCreation = value;
+                }
+            }
+        }
+
+        private bool IsMinNumberOfActiveThreads
+        {
+            get { return NumberOfActiveThreads == _minThreads; }
+        }
+
         public void Produce(Tuple<Delegate, object[]> job)
         {
             Tuple<Delegate, object[]> createThreadsJob = null;
 
-            if (NumberOfActiveThreads == _minThreads)
+            // TODO: Must check if all threads are busy and number of active threads are smaller than max number of threads
+            // TODO: then create threads on demand
+            if (IsMinNumberOfActiveThreads)
                 createThreadsJob = new Tuple<Delegate, object[]>(
-                    (Action<int, string>) LoadThreadQueue, new object[] {_maxThreads, string.Empty});
+                    (Action<int, string>)LoadThreadQueue, new object[] { _maxThreads, string.Empty });
 
             lock (_queueLock)
             {
@@ -201,6 +266,8 @@ namespace GTPool.Sandbox
 
         public Tuple<Delegate, object[]> Consume()
         {
+            var idleTime = !IsThreadCreation && IsMinNumberOfActiveThreads ? _minIdleTime : _idleTime;
+
             lock (_queueLock)
             {
                 // If the queue is empty, wait for an item to be added
@@ -215,7 +282,7 @@ namespace GTPool.Sandbox
 
                     // This releases listLock, only reacquiring it
                     // after being woken up by a call to Pulse
-                    Monitor.Wait(_queueLock, _idleTime);
+                    Monitor.Wait(_queueLock, idleTime);
 
                     if (_queue.Count == 0)
                         return null;
