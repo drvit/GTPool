@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Runtime.CompilerServices;
@@ -26,7 +27,7 @@ namespace GTPool.Sandbox
                 Console.WriteLine("My car is: " + cars[c][0] + " - WT: " + wt);
             };
 
-            var pman = new PoolManager();
+            var pman = new PoolManager(true);
             for (var t = 0; t < cars.Count(); t++)
             {
                 Thread.Sleep(1000);
@@ -41,7 +42,7 @@ namespace GTPool.Sandbox
             pman.AddJob(job2, new object[] {string.Empty});
 
 
-            Thread.Sleep(30000);
+            //Thread.Sleep(30000);
 
             Action<string> job3 = (wt) =>
             {
@@ -60,14 +61,19 @@ namespace GTPool.Sandbox
 
             pman.AddJob(job4, new object[] { string.Empty });
 
+            pman.ExecuteEnqueuedJobs();
         }
     }
     
     public class PoolManager
     {
         public PoolManager()
+            : this(false)
+        { }
+
+        public PoolManager(bool withWait)
         {
-            _queueJ = new ProducerConsumer();
+            _queueJ = new ProducerConsumer(withWait);
         }
 
         private readonly ProducerConsumer _queueJ;
@@ -86,17 +92,31 @@ namespace GTPool.Sandbox
 
         private void AddJob(Tuple<Delegate, object[]> job)
         {
-            lock (_threadsLock)
-            {
-                _queueJ.Produce(job);
-            }
+            _queueJ.Produce(job);
         }
 
-
+        public void ExecuteEnqueuedJobs()
+        {
+            while (_queueJ.Threads.Count > 0)
+            {
+                _queueJ.StopWaiting();
+                Thread.Sleep(10);
+            }
+        }
     }
 
 
     /// -------------------------------------------------------------------------------
+    /// TODO: 
+    /// 1. Create a job interface and class
+    /// 2. Delay execution of a job
+    /// 3. Group jobs 
+    /// 4. Cancel job
+    /// 5. Wait for all jobs to finish  -- In Progress
+    /// 6. Callback function
+    /// 7. Configuration Initializer interface and class
+    /// 8. Set job priority
+    /// 9. 
     public class ProducerConsumer
     {
         private readonly object _queueLock = new object();
@@ -106,24 +126,68 @@ namespace GTPool.Sandbox
         private readonly int _maxThreads;
         private readonly int _idleTime;
         private readonly int _minIdleTime;
+        private readonly bool _withWait;
         private int _numberOfActiveThreads;
         private int _threadId;
         private bool _isThreadCreation;
+        private Dictionary<string, Thread> _threads;
 
         public ProducerConsumer()
-            : this(2, 10, 10000, 1)
-        {
-        }
+            : this(false)
+        { }
 
-        public ProducerConsumer(int minThreads, int maxThreads, int idleTime, int minIdleTime)
+        public ProducerConsumer(bool withWait)
+            : this(0, 10, 10000, 1, withWait)
+        { }
+
+        public ProducerConsumer(int minThreads, int maxThreads, int idleTime, int minIdleTime, bool withWait)
         {
             _maxThreads = maxThreads;
             _idleTime = idleTime;
             _minIdleTime = minIdleTime;
             _minThreads = minThreads;
-            _threadId = new Random().Next(10, 99);
+            _threadId = 0; // new Random().Next(10, 99);
+            _withWait = withWait;
 
+            Threads = new Dictionary<string, Thread>();
             LoadThreadQueue(maxThreads);
+        }
+
+        public Dictionary<string, Thread> Threads
+        {
+            get
+            {
+                lock (_counterLock)
+                {
+                    return _threads;
+                }
+            }
+            set
+            {
+                lock (_counterLock)
+                {
+                    _threads = value;
+                }
+            }
+        }
+
+        public void StopWaiting()
+        {
+            lock (_queueLock)
+            {
+                Monitor.PulseAll(_queueLock);
+            }
+        }
+
+        public int RemainingJobs
+        {
+            get
+            {
+                lock (_queueLock)
+                {
+                    return _queue.Count;
+                }
+            }
         }
 
         private void LoadThreadQueue(int maxThreads, string wt)
@@ -143,15 +207,15 @@ namespace GTPool.Sandbox
                     NumberOfActiveThreads++;
                     var threadName = NextThreadName;
 
-                    var thread = new Thread(JobInvoker)
+                    Threads.Add(threadName, new Thread(JobInvoker)
                     {
                         Name = threadName,
                         IsBackground = true,
                         Priority = ThreadPriority.Normal
-                    };
+                    });
 
                     Console.WriteLine("Thread created " + threadName);
-                    thread.Start(threadName);
+                    Threads[threadName].Start(threadName);
                 }
                 catch
                 {
@@ -166,6 +230,14 @@ namespace GTPool.Sandbox
         {
             while (true)
             {
+                if (_withWait)
+                {
+                    lock (_queueLock)
+                    {
+                        Monitor.Wait(_queueLock);
+                    }
+                }
+
                 var job = Consume();
 
                 if (job == null)
@@ -181,6 +253,7 @@ namespace GTPool.Sandbox
                 }
             }
 
+            Threads.Remove(threadName.ToString());
             NumberOfActiveThreads--;
             Console.WriteLine("Thread ended " + threadName);
         }
@@ -192,7 +265,7 @@ namespace GTPool.Sandbox
                 lock (_counterLock)
                 {
                     _threadId++;
-                    return "__thread_" + _threadId + "__";
+                    return "__thread_" + _threadId.ToString("D2") + "__";
                 }
             }
         }
@@ -259,8 +332,9 @@ namespace GTPool.Sandbox
                 // empty before. Otherwise, if we add several items
                 // in quick succession, we may only pulse once, waking
                 // a single thread up, even if there are multiple threads
-                // waiting for items.            
-                Monitor.Pulse(_queueLock);
+                // waiting for items.
+                if (!_withWait)
+                    Monitor.Pulse(_queueLock);
             }
         }
 
