@@ -43,7 +43,7 @@ namespace GTPool.Sandbox
             pman.AddJob(job2, new object[] {string.Empty});
 
 
-            Action<string> job4 = (wt) =>
+            Action<string> job4 = wt =>
             {
                 Thread.Sleep(5000);
                 Console.WriteLine("My other car is a MERCEDES. - WT: " + wt + " : " + HiResDateTime.UtcNowTicks);
@@ -51,7 +51,7 @@ namespace GTPool.Sandbox
 
             pman.AddJob(job4, new object[] { string.Empty });
 
-            pman.ExecuteEnqueuedJobs();
+            pman.ExecuteEnqueuedJobs("p1");
 
             //Thread.Sleep(30000);
 
@@ -63,7 +63,7 @@ namespace GTPool.Sandbox
 
             pman.AddJob(job3, new object[] { string.Empty });
 
-            pman.ExecuteEnqueuedJobs();
+            pman.ExecuteEnqueuedJobs("p2");
         }
     }
     
@@ -97,9 +97,9 @@ namespace GTPool.Sandbox
             _queueJ.Produce(job);
         }
 
-        public void ExecuteEnqueuedJobs()
+        public void ExecuteEnqueuedJobs(string process)
         {
-            _queueJ.StopWaiting();
+            _queueJ.StopWaiting(process);
         }
     }
 
@@ -123,11 +123,9 @@ namespace GTPool.Sandbox
         private readonly int _minThreads;
         private readonly int _maxThreads;
         private readonly int _idleTime;
-        private readonly int _minIdleTime;
         private bool _withWait;
         private int _threadId;
         private bool _isThreadCreation;
-        //private Dictionary<string, Thread> _threads;
         private Dictionary<string, PoolThread> _threads; 
 
         public ProducerConsumer()
@@ -135,14 +133,13 @@ namespace GTPool.Sandbox
         { }
 
         public ProducerConsumer(bool withWait)
-            : this(2, 15, 10000, 1, withWait)
+            : this(2, 10, 15000, withWait)
         { }
 
-        public ProducerConsumer(int minThreads, int maxThreads, int idleTime, int minIdleTime, bool withWait)
+        public ProducerConsumer(int minThreads, int maxThreads, int idleTime, bool withWait)
         {
             _maxThreads = maxThreads;
             _idleTime = idleTime;
-            _minIdleTime = minIdleTime;
             _minThreads = minThreads;
             _threadId = 0; // new Random().Next(10, 99);
             _withWait = withWait;
@@ -155,26 +152,26 @@ namespace GTPool.Sandbox
         {
             get
             {
-                lock (_counterLock)
+                lock (_queueLock)
                 {
                     return _threads;
                 }
             }
             set
             {
-                lock (_counterLock)
+                lock (_queueLock)
                 {
                     _threads = value;
                 }
             }
         }
 
-        public void StopWaiting()
+        public void StopWaiting(string process)
         {
-            if (!_withWait)
+            if (!WithWait)
                 return;
 
-            _withWait = false;
+            WithWait = false;
 
             lock (_queueLock)
             {
@@ -184,12 +181,13 @@ namespace GTPool.Sandbox
                 }
             }
 
-            while (Threads.Count > _minThreads || Threads.Any(x => x.Value.Status == SafeThreadStatus.Running))
+            process = process;
+            while (IsThereJob || !IsMinNumberOfActiveThreads || Threads.Any(x => x.Value.Status == SafeThreadStatus.Running))
             {
                 Thread.Sleep(1);
             }
 
-            _withWait = true;
+            WithWait = true;
         }
 
         public int RemainingJobs
@@ -237,22 +235,50 @@ namespace GTPool.Sandbox
             {
                 var job = Consume(threadName.ToString());
 
-                if (job == null)
-                {
-                    if (!IsMinNumberOfActiveThreads && !IsThreadCreation && !_withWait)
-                        break;
-                }
-                else
+                if (job != null)
                 {
                     //Console.WriteLine("Working Thread " + threadName);
                     job.Item2[job.Item2.Length - 1] = threadName;
                     job.Item1.DynamicInvoke(job.Item2);
                 }
+                else
+                {
+                    if (!IsMinNumberOfActiveThreads && !IsThreadCreation && !WithWait && !IsThereJob)
+                        break;
+                }
             }
 
             Threads.Remove(threadName.ToString());
-            //NumberOfActiveThreads--;
             Console.WriteLine("Thread ended " + threadName + " : " + HiResDateTime.UtcNowTicks);
+        }
+
+        private bool WithWait
+        {
+            get
+            {
+                lock (_queueLock)
+                {
+                    return _withWait;
+                }
+            }
+            set
+            {
+                lock (_queueLock)
+                {
+                    _withWait = value;
+                }
+            }
+        }
+
+        private bool IsThereJob
+        {
+            get
+            {
+                lock (_queueLock)
+                {
+                    return _queue.Count > 0;
+                }
+            }
         }
 
         private string NextThreadName
@@ -290,21 +316,13 @@ namespace GTPool.Sandbox
             get { return Threads.Count == _minThreads; }
         }
 
-        private int IdleTime
-        {
-            get
-            {
-                return !IsThreadCreation && IsMinNumberOfActiveThreads ? _minIdleTime : _idleTime;
-            }
-        }
-
         public void Produce(Tuple<Delegate, object[]> job)
         {
             Tuple<Delegate, object[]> createThreadsJob = null;
 
             // TODO: Must check if all threads are busy and number of active threads are smaller than max number of threads
             // TODO: then create threads on demand
-            if (IsMinNumberOfActiveThreads)
+            if (IsMinNumberOfActiveThreads && !IsThreadCreation)
                 createThreadsJob = new Tuple<Delegate, object[]>(
                     (Action<int, string>)LoadThreadQueue, new object[] { _maxThreads, string.Empty });
 
@@ -315,49 +333,29 @@ namespace GTPool.Sandbox
 
                 _queue.Enqueue(job);
 
-                // We always need to pulse, even if the queue wasn't
-                // empty before. Otherwise, if we add several items
-                // in quick succession, we may only pulse once, waking
-                // a single thread up, even if there are multiple threads
-                // waiting for items.
-                if (!_withWait)
+                if (!WithWait)
                     Monitor.Pulse(_queueLock);
             }
         }
 
         public Tuple<Delegate, object[]> Consume(string threadName)
         {
-            var idleTime = IdleTime;
 
             lock (_queueLock)
             {
-                // If the queue is empty, wait for an item to be added
-                // Note that this is a while loop, as we may be pulsed
-                // but not wake up before another thread has come in and
-                // consumed the newly added object. In that case, we'll
-                // have to wait for another pulse.
-                if (_queue.Count == 0)
-                {
-                    // one thread calls Wait, which makes it block 
-                    // until another thread calls Pulse or PulseAll
+                if (_queue.Count > 0 && !WithWait)
+                    return _queue.Dequeue() as Tuple<Delegate, object[]>;
 
-                    // This releases listLock, only reacquiring it
-                    // after being woken up by a call to Pulse
-                    Threads[threadName].Wait(_queueLock, idleTime);
-                    //Monitor.Wait(_queueLock, idleTime);
-
-                    if (_queue.Count == 0)
-                        return null;
-                }
-
-                return _queue.Dequeue() as Tuple<Delegate, object[]>;
+                Threads[threadName].Wait(_queueLock, _idleTime);
             }
+
+            return null;
         }
     }
 
     public class PoolThread
     {
-        private const int Timeout = 300000;
+        private const int Timeout = 30000;
 
         public PoolThread(Thread thread)
         {
