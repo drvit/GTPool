@@ -33,7 +33,7 @@ namespace GTPool.Sandbox
                 Console.WriteLine("My car is: " + cars[c][0] + " - WT: " + wt + " : " + HiResDateTime.UtcNow);
             };
 
-            var pman = new ThreadPoolManager(true);
+            var pman = new ThreadPoolManager(false);
             for (var t = 0; t < cars.Count(); t++)
             {
                 //Thread.Sleep(1000);
@@ -66,7 +66,7 @@ namespace GTPool.Sandbox
                 Console.WriteLine("I have got an other car that is not in the list. :) - WT: " + wt + " : " + HiResDateTime.UtcNow);
             };
 
-            pman.AddJob(job3, new object[] { string.Empty });
+            pman.AddJob(job3, new object[] { string.Empty }, ThreadPriority.Highest, false);
 
             pman.ExecuteEnqueuedJobs();
         }
@@ -92,10 +92,15 @@ namespace GTPool.Sandbox
 
         public void AddJob(Delegate job, object[] parameters)
         {
-            AddJob(new Tuple<Delegate, object[]>(job, parameters));
+            AddJob(new ManagedJob(job, parameters));
         }
 
-        private void AddJob(Tuple<Delegate, object[]> job)
+        public void AddJob(Delegate job, object[] parameters, ThreadPriority threadPriority, bool isBackground)
+        {
+            AddJob(new ManagedJob(job, parameters, threadPriority, isBackground));
+        }
+
+        private void AddJob(ManagedJob job)
         {
             _producerConsumer.Produce(job);
         }
@@ -116,13 +121,13 @@ namespace GTPool.Sandbox
     /// 5. Wait for all jobs to finish  -- Done
     /// 6. Callback function    
     /// 7. Configuration Initializer interface and class
-    /// 8. Set job priority
+    /// 8. Set job priority     -- Done
     /// 9. 
     public class ThreadPool
     {
         private readonly object _queueLock = new object();
         private readonly object _counterLock = new object();
-        private readonly Queue _queue = new Queue();
+        private readonly Queue<ManagedJob> _queue = new Queue<ManagedJob>();
         private readonly int _minThreads;
         private const int DefaultMinThreads = 2;
         private readonly int _maxThreads;
@@ -194,7 +199,7 @@ namespace GTPool.Sandbox
                 }
             }
 
-            while (IsThereJob || Threads.Any(x => x.Value.Status == ManagedThreadStatus.Running))
+            while (IsThereAnyJob || Threads.Any(x => x.Value.Status == ManagedThreadStatus.Running))
             {
                 Thread.Sleep(1);
             }
@@ -238,9 +243,16 @@ namespace GTPool.Sandbox
 
                 if (job != null)
                 {
+                    var thread = Threads[threadName.ToString()].SafeThread;
+                    thread.IsBackground = job.IsBackground;
+                    thread.Priority = job.ThreadPriority;
+                    
                     //Console.WriteLine("Working Thread " + threadName);
-                    job.Item2[job.Item2.Length - 1] = threadName;
-                    job.Item1.DynamicInvoke(job.Item2);
+                    job.Parameters[job.Parameters.Length - 1] = threadName;
+                    job.Target.DynamicInvoke(job.Parameters);
+
+                    thread.IsBackground = true;
+                    thread.Priority = ThreadPriority.Normal;
                 }
                 else
                 {
@@ -253,6 +265,65 @@ namespace GTPool.Sandbox
             Threads.Remove(threadName.ToString());
             Console.WriteLine("Thread ended " + threadName + " : " + HiResDateTime.UtcNow);
         }
+
+        private ManagedJob ShouldCreateMoreThreads()
+        {
+            // TODO: Must check if all threads are busy and number of active threads are smaller than max number of threads
+            // TODO: then create threads on demand
+            if (IsMinNumberOfActiveThreads && IsThereAnyJob && !IsThreadCreation)
+            {
+                IsThreadCreation = true;
+
+                //var numberOfThreads = Math.Min((int)Math.Round(_minThreads * 2.5, 0, MidpointRounding.AwayFromZero), _maxThreads);
+                var numberOfThreads = _maxThreads;
+
+                return new ManagedJob(
+                    (Action<int, string>)LoadThreadQueue, new object[] { numberOfThreads, string.Empty });
+            }
+
+            return null;
+        }
+
+        public void Produce(ManagedJob job)
+        {
+            var createThreads = ShouldCreateMoreThreads();
+
+            lock (_queueLock)
+            {
+                if (createThreads != null)
+                {
+                    _queue.Enqueue(createThreads);
+                    Monitor.Pulse(_queueLock);
+                }
+
+                _queue.Enqueue(job);
+
+                if (!WithWait)
+                {
+                    Monitor.Pulse(_queueLock);
+                }
+            }
+        }
+
+        private ManagedJob Consume(string threadName)
+        {
+            lock (_queueLock)
+            {
+                //TODO: Continue from here
+
+                //_queue.Where(x => x.)
+                if (_queue.Count > 0 && !WithWait)
+                {
+                    return _queue.Dequeue();
+                }
+
+                Threads[threadName].Wait(_queueLock, _idleTime);
+            }
+
+            return null;
+        }
+
+        #region Private Properties
 
         private bool WithWait
         {
@@ -272,7 +343,7 @@ namespace GTPool.Sandbox
             }
         }
 
-        private bool IsThereJob
+        private bool IsThereAnyJob
         {
             get
             {
@@ -318,59 +389,31 @@ namespace GTPool.Sandbox
             get { return Threads.Count == _minThreads; }
         }
 
-        private Tuple<Delegate, object[]> ShouldCreateMoreThreads()
+        #endregion
+    }
+
+    public class ManagedJob
+    {
+        public ManagedJob(Delegate target, object[] parameters)
+            : this(target, parameters, ThreadPriority.Normal, true)
+        { }
+
+        public ManagedJob(Delegate target, object[] parameters, 
+            ThreadPriority threadPriority, bool isBackground)
         {
-            // TODO: Must check if all threads are busy and number of active threads are smaller than max number of threads
-            // TODO: then create threads on demand
-            if (IsMinNumberOfActiveThreads && IsThereJob && !IsThreadCreation)
-            {
-                IsThreadCreation = true;
-
-                //var numberOfThreads = Math.Min((int)Math.Round(_minThreads * 2.5, 0, MidpointRounding.AwayFromZero), _maxThreads);
-                var numberOfThreads = _maxThreads;
-                
-                return new Tuple<Delegate, object[]>(
-                    (Action<int, string>)LoadThreadQueue, new object[] { numberOfThreads, string.Empty });
-            }
-
-            return null;
+            ThreadPriority = threadPriority;
+            IsBackground = isBackground;
+            Target = target;
+            Parameters = parameters;
         }
 
-        public void Produce(Tuple<Delegate, object[]> job)
-        {
-            var createThreads = ShouldCreateMoreThreads();
+        public Delegate Target { get; private set; }
 
-            lock (_queueLock)
-            {
-                if (createThreads != null)
-                {
-                    _queue.Enqueue(createThreads);
-                    Monitor.Pulse(_queueLock);
-                }
+        public object[] Parameters { get; private set; }
 
-                _queue.Enqueue(job);
+        public ThreadPriority ThreadPriority { get; private set; }
 
-                if (!WithWait)
-                {
-                    Monitor.Pulse(_queueLock);
-                }
-            }
-        }
-
-        public Tuple<Delegate, object[]> Consume(string threadName)
-        {
-            lock (_queueLock)
-            {
-                if (_queue.Count > 0 && !WithWait)
-                {
-                    return _queue.Dequeue() as Tuple<Delegate, object[]>;
-                }
-
-                Threads[threadName].Wait(_queueLock, _idleTime);
-            }
-
-            return null;
-        }
+        public bool IsBackground { get; private set; }
     }
 
     public class ManagedThread
@@ -398,6 +441,7 @@ namespace GTPool.Sandbox
         public void Start(object param)
         {
             Status = ManagedThreadStatus.Running;
+            _idleLifeCycles = StartIdleLifeCycles;
             SafeThread.Start(param);
         }
 
