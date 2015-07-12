@@ -10,8 +10,8 @@ namespace GTPool.Tests.Sandbox
         [TestMethod] 
         public void TestSimpleThreadClass()
         {
-            var threadJobClass = new ProducerConsumer();
-            Assert.IsInstanceOfType(threadJobClass, typeof(ProducerConsumer));
+            var threadJobClass = new ThreadPool();
+            Assert.IsInstanceOfType(threadJobClass, typeof(ThreadPool));
         }
 
         [TestMethod]

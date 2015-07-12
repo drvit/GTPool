@@ -19,16 +19,21 @@ namespace GTPool.Sandbox
                 new object[] {"Corcel", 7000}, 
                 new object[] {"Maverick", 1000}, 
                 new object[] {"Opala", 4000},
-                new object[] {"Belina", 3000}
+                new object[] {"Belina", 3000},
+                new object[] {"Cadilac", 6000}, 
+                new object[] {"Mustang", 7000}, 
+                new object[] {"Parati", 1000}, 
+                new object[] {"Gol", 4000},
+                new object[] {"Ferrari", 3000}
             };
 
             Action<int, string> job = (c, wt) =>
             {
                 Thread.Sleep((int)cars[c][1]);
-                Console.WriteLine("My car is: " + cars[c][0] + " - WT: " + wt + " : " + HiResDateTime.UtcNowTicks);
+                Console.WriteLine("My car is: " + cars[c][0] + " - WT: " + wt + " : " + HiResDateTime.UtcNow);
             };
 
-            var pman = new PoolManager(true);
+            var pman = new ThreadPoolManager(true);
             for (var t = 0; t < cars.Count(); t++)
             {
                 //Thread.Sleep(1000);
@@ -37,7 +42,7 @@ namespace GTPool.Sandbox
 
             Action<string> job2 = (wt) =>
             {
-                Console.WriteLine("I have got " + cars.Count() + " cars - WT: " + wt + " : " + HiResDateTime.UtcNowTicks);
+                Console.WriteLine("I have got " + cars.Count() + " cars - WT: " + wt + " : " + HiResDateTime.UtcNow);
             };
 
             pman.AddJob(job2, new object[] {string.Empty});
@@ -46,41 +51,39 @@ namespace GTPool.Sandbox
             Action<string> job4 = wt =>
             {
                 Thread.Sleep(5000);
-                Console.WriteLine("My other car is a MERCEDES. - WT: " + wt + " : " + HiResDateTime.UtcNowTicks);
+                Console.WriteLine("My other car is a MERCEDES. - WT: " + wt + " : " + HiResDateTime.UtcNow);
             };
 
             pman.AddJob(job4, new object[] { string.Empty });
 
-            pman.ExecuteEnqueuedJobs("p1");
+            pman.ExecuteEnqueuedJobs();
 
             //Thread.Sleep(30000);
 
             Action<string> job3 = (wt) =>
             {
                 Thread.Sleep(3000);
-                Console.WriteLine("I have got an other car that is not in the list. :) - WT: " + wt + " : " + HiResDateTime.UtcNowTicks);
+                Console.WriteLine("I have got an other car that is not in the list. :) - WT: " + wt + " : " + HiResDateTime.UtcNow);
             };
 
             pman.AddJob(job3, new object[] { string.Empty });
 
-            pman.ExecuteEnqueuedJobs("p2");
+            pman.ExecuteEnqueuedJobs();
         }
     }
     
-    public class PoolManager
+    public class ThreadPoolManager
     {
-        public PoolManager()
+        public ThreadPoolManager()
             : this(false)
         { }
 
-        public PoolManager(bool withWait)
+        public ThreadPoolManager(bool withWait)
         {
-            _queueJ = new ProducerConsumer(withWait);
+            _producerConsumer = new ThreadPool(withWait);
         }
 
-        private readonly ProducerConsumer _queueJ;
-        
-        private readonly object _threadsLock = new object();
+        private readonly ThreadPool _producerConsumer;
         
         public void AddJob(Delegate job)
         {
@@ -94,12 +97,12 @@ namespace GTPool.Sandbox
 
         private void AddJob(Tuple<Delegate, object[]> job)
         {
-            _queueJ.Produce(job);
+            _producerConsumer.Produce(job);
         }
 
-        public void ExecuteEnqueuedJobs(string process)
+        public void ExecuteEnqueuedJobs()
         {
-            _queueJ.StopWaiting(process);
+            _producerConsumer.StopWaiting();
         }
     }
 
@@ -107,48 +110,58 @@ namespace GTPool.Sandbox
     /// -------------------------------------------------------------------------------
     /// TODO: 
     /// 1. Create a job interface and class
-    /// 2. Delay execution of a job
+    /// 2. Delay execution of a job (Synchronous)     -- Done
     /// 3. Group jobs 
     /// 4. Cancel job
-    /// 5. Wait for all jobs to finish  -- In Progress
-    /// 6. Callback function
+    /// 5. Wait for all jobs to finish  -- Done
+    /// 6. Callback function    
     /// 7. Configuration Initializer interface and class
     /// 8. Set job priority
     /// 9. 
-    public class ProducerConsumer
+    public class ThreadPool
     {
         private readonly object _queueLock = new object();
         private readonly object _counterLock = new object();
         private readonly Queue _queue = new Queue();
         private readonly int _minThreads;
+        private const int DefaultMinThreads = 2;
         private readonly int _maxThreads;
+        private const int DefaultMaxThreads = 25;
         private readonly int _idleTime;
         private bool _withWait;
         private int _threadId;
         private bool _isThreadCreation;
-        private Dictionary<string, PoolThread> _threads; 
+        private Dictionary<string, ManagedThread> _threads; 
 
-        public ProducerConsumer()
+        public ThreadPool()
             : this(false)
         { }
 
-        public ProducerConsumer(bool withWait)
-            : this(2, 10, 15000, withWait)
+        public ThreadPool(bool synchronous)
+            : this(0, 10, 15000, synchronous)
         { }
 
-        public ProducerConsumer(int minThreads, int maxThreads, int idleTime, bool withWait)
+        public ThreadPool(int minThreads, int maxThreads, int idleTime, bool synchronous)
         {
-            _maxThreads = maxThreads;
-            _idleTime = idleTime;
-            _minThreads = minThreads;
-            _threadId = 0; // new Random().Next(10, 99);
-            _withWait = withWait;
+            _minThreads = minThreads > DefaultMaxThreads
+                ? DefaultMaxThreads
+                : minThreads < DefaultMinThreads ? DefaultMinThreads : minThreads;
 
-            Threads = new Dictionary<string, PoolThread>();
-            LoadThreadQueue(maxThreads);
+            _maxThreads = maxThreads < DefaultMinThreads
+                ? DefaultMinThreads
+                : maxThreads > DefaultMaxThreads ? DefaultMaxThreads : maxThreads;
+
+            _minThreads = _minThreads > _maxThreads ? _maxThreads : _minThreads;
+
+            _idleTime = idleTime;
+            _threadId = 0;
+            _withWait = synchronous;
+
+            Threads = new Dictionary<string, ManagedThread>();
+            LoadThreadQueue(_withWait ? _minThreads : _maxThreads);
         }
 
-        public Dictionary<string, PoolThread> Threads
+        public Dictionary<string, ManagedThread> Threads
         {
             get
             {
@@ -166,7 +179,7 @@ namespace GTPool.Sandbox
             }
         }
 
-        public void StopWaiting(string process)
+        public void StopWaiting()
         {
             if (!WithWait)
                 return;
@@ -181,8 +194,7 @@ namespace GTPool.Sandbox
                 }
             }
 
-            process = process;
-            while (IsThereJob || !IsMinNumberOfActiveThreads || Threads.Any(x => x.Value.Status == SafeThreadStatus.Running))
+            while (IsThereJob || Threads.Any(x => x.Value.Status == ManagedThreadStatus.Running))
             {
                 Thread.Sleep(1);
             }
@@ -190,39 +202,28 @@ namespace GTPool.Sandbox
             WithWait = true;
         }
 
-        public int RemainingJobs
+        private void LoadThreadQueue(int numberOfThreads, string wt)
         {
-            get
-            {
-                lock (_queueLock)
-                {
-                    return _queue.Count;
-                }
-            }
+            Console.WriteLine("LoadThreadQueue - WT " + wt + " : " + HiResDateTime.UtcNow);
+            LoadThreadQueue(numberOfThreads);
         }
 
-        private void LoadThreadQueue(int maxThreads, string wt)
-        {
-            Console.WriteLine("LoadThreadQueue - WT " + wt + " : " + HiResDateTime.UtcNowTicks);
-            LoadThreadQueue(maxThreads);
-        }
-
-        private void LoadThreadQueue(int maxThreads)
+        private void LoadThreadQueue(int numberOfThreads)
         {
             IsThreadCreation = true;
 
-            while (Threads.Count < maxThreads)
+            while (Threads.Count < numberOfThreads)
             {
                 var threadName = NextThreadName;
 
-                Threads.Add(threadName, new PoolThread(new Thread(JobInvoker)
+                Threads.Add(threadName, new ManagedThread(new Thread(JobInvoker)
                 {
                     Name = threadName,
                     IsBackground = true,
                     Priority = ThreadPriority.Normal
                 }));
 
-                Console.WriteLine("Thread created " + threadName + " : " + HiResDateTime.UtcNowTicks);
+                Console.WriteLine("Thread created " + threadName + " : " + HiResDateTime.UtcNow);
                 Threads[threadName].Start(threadName);
             }
 
@@ -243,13 +244,14 @@ namespace GTPool.Sandbox
                 }
                 else
                 {
-                    if (!IsMinNumberOfActiveThreads && !IsThreadCreation && !WithWait && !IsThereJob)
+                    //if (!IsMinNumberOfActiveThreads && !IsThreadCreation && !WithWait && !IsThereJob)
+                    if (Threads[threadName.ToString()].Status == ManagedThreadStatus.Terminated)
                         break;
                 }
             }
 
             Threads.Remove(threadName.ToString());
-            Console.WriteLine("Thread ended " + threadName + " : " + HiResDateTime.UtcNowTicks);
+            Console.WriteLine("Thread ended " + threadName + " : " + HiResDateTime.UtcNow);
         }
 
         private bool WithWait
@@ -316,35 +318,53 @@ namespace GTPool.Sandbox
             get { return Threads.Count == _minThreads; }
         }
 
-        public void Produce(Tuple<Delegate, object[]> job)
+        private Tuple<Delegate, object[]> ShouldCreateMoreThreads()
         {
-            Tuple<Delegate, object[]> createThreadsJob = null;
-
             // TODO: Must check if all threads are busy and number of active threads are smaller than max number of threads
             // TODO: then create threads on demand
-            if (IsMinNumberOfActiveThreads && !IsThreadCreation)
-                createThreadsJob = new Tuple<Delegate, object[]>(
-                    (Action<int, string>)LoadThreadQueue, new object[] { _maxThreads, string.Empty });
+            if (IsMinNumberOfActiveThreads && IsThereJob && !IsThreadCreation)
+            {
+                IsThreadCreation = true;
+
+                //var numberOfThreads = Math.Min((int)Math.Round(_minThreads * 2.5, 0, MidpointRounding.AwayFromZero), _maxThreads);
+                var numberOfThreads = _maxThreads;
+                
+                return new Tuple<Delegate, object[]>(
+                    (Action<int, string>)LoadThreadQueue, new object[] { numberOfThreads, string.Empty });
+            }
+
+            return null;
+        }
+
+        public void Produce(Tuple<Delegate, object[]> job)
+        {
+            var createThreads = ShouldCreateMoreThreads();
 
             lock (_queueLock)
             {
-                if (createThreadsJob != null)
-                    _queue.Enqueue(createThreadsJob);
+                if (createThreads != null)
+                {
+                    _queue.Enqueue(createThreads);
+                    Monitor.Pulse(_queueLock);
+                }
 
                 _queue.Enqueue(job);
 
                 if (!WithWait)
+                {
                     Monitor.Pulse(_queueLock);
+                }
             }
         }
 
         public Tuple<Delegate, object[]> Consume(string threadName)
         {
-
             lock (_queueLock)
             {
                 if (_queue.Count > 0 && !WithWait)
+                {
                     return _queue.Dequeue() as Tuple<Delegate, object[]>;
+                }
 
                 Threads[threadName].Wait(_queueLock, _idleTime);
             }
@@ -353,51 +373,58 @@ namespace GTPool.Sandbox
         }
     }
 
-    public class PoolThread
+    public class ManagedThread
     {
         private const int Timeout = 30000;
-
-        public PoolThread(Thread thread)
+        private const int MaxIdleLifeCycles = 3;
+        private const int StartIdleLifeCycles = 1;
+        private int _idleLifeCycles;
+        
+        public ManagedThread(Thread thread)
         {
             SafeThread = thread;
         }
 
         public Thread SafeThread { get; private set; }
-        public SafeThreadStatus Status { get; private set; }
+        public ManagedThreadStatus Status { get; private set; }
 
         public void Start()
         {
-            Status = SafeThreadStatus.Running;
+            Status = ManagedThreadStatus.Running;
+            _idleLifeCycles = StartIdleLifeCycles;
             SafeThread.Start();
         }
 
         public void Start(object param)
         {
-            Status = SafeThreadStatus.Running;
+            Status = ManagedThreadStatus.Running;
             SafeThread.Start(param);
         }
 
         public void Wait(object queuelock)
         {
+            _idleLifeCycles = MaxIdleLifeCycles;
             Wait(queuelock, Timeout);
         }
 
         public void Wait(object queuelock, int idleTime)
         {
-            Status = SafeThreadStatus.Waiting;
-            Monitor.Wait(queuelock, idleTime);
-            Status = SafeThreadStatus.Running;
-        }
+            Status = ManagedThreadStatus.Waiting;
 
-        public void WakeUp(object queuelock)
-        {
-            Status = SafeThreadStatus.Running;
-            Monitor.Pulse(queuelock);
+            if (Monitor.Wait(queuelock, idleTime))
+                _idleLifeCycles = StartIdleLifeCycles;
+
+            _idleLifeCycles++;
+
+            Status = _idleLifeCycles <= MaxIdleLifeCycles 
+                ? ManagedThreadStatus.Running 
+                : ManagedThreadStatus.Terminated;
         }
     }
 
-    public enum SafeThreadStatus
+    public enum ManagedThreadStatus
     {
+        Terminated,
         Waiting,
         Running
     }
@@ -405,7 +432,8 @@ namespace GTPool.Sandbox
     public class HiResDateTime
     {
         private static long _lastTimeStamp = DateTime.UtcNow.Ticks;
-        public static string UtcNowTicks
+
+        public static long UtcNowTicks
         {
             get
             {
@@ -418,8 +446,16 @@ namespace GTPool.Sandbox
                 } while (Interlocked.CompareExchange
                              (ref _lastTimeStamp, newval, orig) != orig);
 
+                return newval;
+            }
+        }
+
+        public static string UtcNow
+        {
+            get
+            {
                 //return new DateTime(newval, DateTimeKind.Utc).ToString("o");
-                return new DateTime(newval, DateTimeKind.Utc).ToString("HH:mm.ss:fff");
+                return new DateTime(UtcNowTicks, DateTimeKind.Utc).ToString("HH:mm.ss:fff");
             }
         }
     }
