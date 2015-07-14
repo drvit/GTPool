@@ -13,6 +13,22 @@ namespace GTPool.Sandbox
     {
         public static void Run()
         {
+            var pman = new ThreadPoolManager(false);
+
+            Func<string, string, string> job0 = (prase, wt) =>
+            {
+                Console.WriteLine(prase + " " + wt);
+                return wt;
+            };
+
+            Action<string, string> job0Callback = (s, c) =>
+            {
+                Console.WriteLine(s + " " + c);
+            };
+
+            pman.AddJob(job0, new object[] { "Começando os trabalhos", string.Empty }, 
+                job0Callback, new object[] { "Começando os trabalhos with a callback ", string.Empty });
+            
             var cars = new [] 
             {
                 new object[] {"Fusca", 6000}, 
@@ -33,7 +49,6 @@ namespace GTPool.Sandbox
                 Console.WriteLine("My car is: " + cars[c][0] + " - WT: " + wt + " : " + HiResDateTime.UtcNow);
             };
 
-            var pman = new ThreadPoolManager(false);
             for (var t = 0; t < cars.Count(); t++)
             {
                 //Thread.Sleep(1000);
@@ -100,6 +115,16 @@ namespace GTPool.Sandbox
             AddJob(new ManagedJob(job, parameters, threadPriority, isBackground));
         }
 
+        public void AddJob(Delegate job, object[] parameters, Delegate callback, object[] callbackParameters)
+        {
+            AddJob(new ManagedJob(job, parameters, callback, callbackParameters));
+        }
+
+        public void AddJob(Delegate job, object[] parameters, Delegate callback, object[] callbackParameters, ThreadPriority threadPriority, bool isBackground)
+        {
+            AddJob(new ManagedJob(job, parameters, callback, callbackParameters, threadPriority, isBackground));
+        }
+
         private void AddJob(ManagedJob job)
         {
             _producerConsumer.Produce(job);
@@ -119,7 +144,7 @@ namespace GTPool.Sandbox
     /// 3. Group jobs 
     /// 4. Cancel job
     /// 5. Wait for all jobs to finish  -- Done
-    /// 6. Callback function    
+    /// 6. Callback function    -- Done
     /// 7. Configuration Initializer interface and class
     /// 8. Set job priority     -- Done
     /// 9. 
@@ -142,11 +167,11 @@ namespace GTPool.Sandbox
             : this(false)
         { }
 
-        public ThreadPool(bool synchronous)
-            : this(0, 10, 15000, synchronous)
+        public ThreadPool(bool asynchronous)
+            : this(0, 10, 15000, asynchronous)
         { }
 
-        public ThreadPool(int minThreads, int maxThreads, int idleTime, bool synchronous)
+        public ThreadPool(int minThreads, int maxThreads, int idleTime, bool asynchronous)
         {
             _minThreads = minThreads > DefaultMaxThreads
                 ? DefaultMaxThreads
@@ -160,7 +185,7 @@ namespace GTPool.Sandbox
 
             _idleTime = idleTime;
             _threadId = 0;
-            _withWait = synchronous;
+            _withWait = asynchronous;
 
             Threads = new Dictionary<string, ManagedThread>();
             LoadThreadQueue(_withWait ? _minThreads : _maxThreads);
@@ -207,6 +232,45 @@ namespace GTPool.Sandbox
             WithWait = true;
         }
 
+        public void Produce(ManagedJob job)
+        {
+            var createThreads = ShouldCreateMoreThreads();
+
+            lock (_queueLock)
+            {
+                if (createThreads != null)
+                {
+                    _queue.Enqueue(createThreads);
+                    Monitor.Pulse(_queueLock);
+                }
+
+                _queue.Enqueue(job);
+
+                if (!WithWait)
+                {
+                    Monitor.Pulse(_queueLock);
+                }
+            }
+        }
+
+        private ManagedJob ShouldCreateMoreThreads()
+        {
+            // TODO: Must check if all threads are busy and number of active threads are smaller than max number of threads
+            // TODO: then create threads on demand
+            if (IsMinNumberOfActiveThreads && IsThereAnyJob && !IsThreadCreation)
+            {
+                IsThreadCreation = true;
+
+                //var numberOfThreads = Math.Min((int)Math.Round(_minThreads * 2.5, 0, MidpointRounding.AwayFromZero), _maxThreads);
+                var numberOfThreads = _maxThreads;
+
+                return new ManagedJob(
+                    (Action<int, string>)LoadThreadQueue, new object[] { numberOfThreads, string.Empty });
+            }
+
+            return null;
+        }
+
         private void LoadThreadQueue(int numberOfThreads, string wt)
         {
             Console.WriteLine("LoadThreadQueue - WT " + wt + " : " + HiResDateTime.UtcNow);
@@ -248,9 +312,8 @@ namespace GTPool.Sandbox
                     thread.Priority = job.ThreadPriority;
                     
                     //Console.WriteLine("Working Thread " + threadName);
-                    job.Parameters[job.Parameters.Length - 1] = threadName;
-                    job.Target.DynamicInvoke(job.Parameters);
-
+                    job.DoWork(threadName.ToString());
+                    
                     thread.IsBackground = true;
                     thread.Priority = ThreadPriority.Normal;
                 }
@@ -264,45 +327,6 @@ namespace GTPool.Sandbox
 
             Threads.Remove(threadName.ToString());
             Console.WriteLine("Thread ended " + threadName + " : " + HiResDateTime.UtcNow);
-        }
-
-        private ManagedJob ShouldCreateMoreThreads()
-        {
-            // TODO: Must check if all threads are busy and number of active threads are smaller than max number of threads
-            // TODO: then create threads on demand
-            if (IsMinNumberOfActiveThreads && IsThereAnyJob && !IsThreadCreation)
-            {
-                IsThreadCreation = true;
-
-                //var numberOfThreads = Math.Min((int)Math.Round(_minThreads * 2.5, 0, MidpointRounding.AwayFromZero), _maxThreads);
-                var numberOfThreads = _maxThreads;
-
-                return new ManagedJob(
-                    (Action<int, string>)LoadThreadQueue, new object[] { numberOfThreads, string.Empty });
-            }
-
-            return null;
-        }
-
-        public void Produce(ManagedJob job)
-        {
-            var createThreads = ShouldCreateMoreThreads();
-
-            lock (_queueLock)
-            {
-                if (createThreads != null)
-                {
-                    _queue.Enqueue(createThreads);
-                    Monitor.Pulse(_queueLock);
-                }
-
-                _queue.Enqueue(job);
-
-                if (!WithWait)
-                {
-                    Monitor.Pulse(_queueLock);
-                }
-            }
         }
 
         private ManagedJob Consume(string threadName)
@@ -394,26 +418,61 @@ namespace GTPool.Sandbox
 
     public class ManagedJob
     {
-        public ManagedJob(Delegate target, object[] parameters)
-            : this(target, parameters, ThreadPriority.Normal, true)
+        public ManagedJob(Delegate work, object[] parameters)
+            : this(work, parameters, null, null)
         { }
 
-        public ManagedJob(Delegate target, object[] parameters, 
+        public ManagedJob(Delegate work, object[] parameters, ThreadPriority threadPriority, bool isBackground)
+            : this(work, parameters, null, null, threadPriority, isBackground)
+        { }
+
+        public ManagedJob(Delegate work, object[] parameters, Delegate callBack, object[] callBackParameters)
+            : this(work, parameters, callBack, callBackParameters, ThreadPriority.Normal, true)
+        { }
+
+        public ManagedJob(Delegate work, object[] parameters, Delegate callBack, object[] callBackParameters, 
             ThreadPriority threadPriority, bool isBackground)
         {
             ThreadPriority = threadPriority;
             IsBackground = isBackground;
-            Target = target;
-            Parameters = parameters;
+
+            _work = work;
+            _parameters = parameters;
+            _callback = callBack;
+            _callbackParameters = callBackParameters;
         }
 
-        public Delegate Target { get; private set; }
-
-        public object[] Parameters { get; private set; }
+        private readonly Delegate _work;
+        private object[] _parameters;
+        private readonly Delegate _callback;
+        private object[] _callbackParameters;
 
         public ThreadPriority ThreadPriority { get; private set; }
 
         public bool IsBackground { get; private set; }
+
+        public void DoWork(string threadName)
+        {
+            if (_parameters == null)
+                _parameters = new object[] {threadName};
+            else
+                _parameters[_parameters.Length - 1] = threadName;
+
+            var result = _work.DynamicInvoke(_parameters);
+
+            if (_callback != null)
+            {
+                if (result != null)
+                {
+                    if (_callbackParameters == null)
+                        _callbackParameters = new[] {result};
+                    else
+                        _callbackParameters[_callbackParameters.Length - 1] = result;
+                }
+
+                _callback.DynamicInvoke(_callbackParameters);
+            }
+        }
     }
 
     public class ManagedThread
