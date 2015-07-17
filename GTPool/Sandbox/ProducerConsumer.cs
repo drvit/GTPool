@@ -74,38 +74,38 @@ namespace GTPool.Sandbox
                 //new object[] {"Belina", 3000},
                 //new object[] {"Cadilac", 3000}, 
                 //new object[] {"Mustang", 3000}, 
-                //new object[] {"Parati", 3000}, 
-                //new object[] {"Fusca", 3000}, 
-                //new object[] {"Corcel", 3000}, 
-                //new object[] {"Maverick", 3000}, 
-                //new object[] {"Opala", 3000},
-                //new object[] {"Belina", 3000},
-                //new object[] {"Cadilac", 3000}, 
-                //new object[] {"Mustang", 3000}, 
-                //new object[] {"Parati", 3000}, 
-                //new object[] {"Fusca", 3000}, 
-                //new object[] {"Corcel", 3000}, 
-                //new object[] {"Maverick", 3000}, 
-                //new object[] {"Opala", 3000},
-                //new object[] {"Belina", 3000},
-                //new object[] {"Cadilac", 3000}, 
-                //new object[] {"Mustang", 3000}, 
-                //new object[] {"Parati", 3000}, 
-                //new object[] {"Gol", 3000},
-                //new object[] {"Ferrari", 3000},
-                //new object[] {"Fusca", 3000}, 
-                //new object[] {"Corcel", 3000}, 
-                //new object[] {"Maverick", 3000}, 
-                //new object[] {"Opala", 3000},
-                //new object[] {"Belina", 3000},
-                //new object[] {"Cadilac", 3000}, 
-                //new object[] {"Mustang", 3000}, 
-                //new object[] {"Parati", 3000}, 
-                //new object[] {"Fusca", 3000}, 
-                //new object[] {"Corcel", 3000}, 
-                //new object[] {"Maverick", 3000}, 
-                //new object[] {"Opala", 3000},
-                //new object[] {"Belina", 3000},
+                new object[] {"Parati", 3000}, 
+                new object[] {"Fusca", 3000}, 
+                new object[] {"Corcel", 3000}, 
+                new object[] {"Maverick", 3000}, 
+                new object[] {"Opala", 3000},
+                new object[] {"Belina", 3000},
+                new object[] {"Cadilac", 3000}, 
+                new object[] {"Mustang", 3000}, 
+                new object[] {"Parati", 3000}, 
+                new object[] {"Fusca", 3000}, 
+                new object[] {"Corcel", 3000}, 
+                new object[] {"Maverick", 3000}, 
+                new object[] {"Opala", 3000},
+                new object[] {"Belina", 3000},
+                new object[] {"Cadilac", 3000}, 
+                new object[] {"Mustang", 3000}, 
+                new object[] {"Parati", 3000}, 
+                new object[] {"Gol", 3000},
+                new object[] {"Ferrari", 3000},
+                new object[] {"Fusca", 3000}, 
+                new object[] {"Corcel", 3000}, 
+                new object[] {"Maverick", 3000}, 
+                new object[] {"Opala", 3000},
+                new object[] {"Belina", 3000},
+                new object[] {"Cadilac", 3000}, 
+                new object[] {"Mustang", 3000}, 
+                new object[] {"Parati", 3000}, 
+                new object[] {"Fusca", 3000}, 
+                new object[] {"Corcel", 3000}, 
+                new object[] {"Maverick", 3000}, 
+                new object[] {"Opala", 3000},
+                new object[] {"Belina", 3000},
                 new object[] {"Cadilac", 3000}, 
                 new object[] {"Mustang", 3000}, 
                 new object[] {"Parati", 3000}, 
@@ -236,10 +236,7 @@ namespace GTPool.Sandbox
     public class ThreadPool
     {
         private readonly object _queueLocker = new object();
-        private readonly object _threadLocker = new object();
         private readonly object _variableLocker = new object();
-        //private readonly Queue<ManagedJob> _queue = new Queue<ManagedJob>();
-        private readonly Queue<ManagedJob> _queueThread = new Queue<ManagedJob>();
         private readonly Queue<ManagedJob> _queueHighest = new Queue<ManagedJob>();
         private readonly Queue<ManagedJob> _queueAboveNormal = new Queue<ManagedJob>();
         private readonly Queue<ManagedJob> _queueNormal = new Queue<ManagedJob>();
@@ -313,7 +310,7 @@ namespace GTPool.Sandbox
                 Monitor.PulseAll(_queueLocker);
             }
 
-            while (NumberOfRemainingJobs > 0 || Threads.Any(x => x.Value.Status == ManagedThreadStatus.Running))
+            while (NumberOfRemainingJobs > 0 || Threads.Any(x => x.Value.Status == ManagedThreadStatus.Working))
             {
                 Thread.Sleep(1);
             }
@@ -328,24 +325,24 @@ namespace GTPool.Sandbox
             switch (job.ThreadPriority)
             {
                 case ThreadPriority.Highest:
-                    ProduceWithPriority(_queueHighest, job);
+                    AddJobToQueue(_queueHighest, job);
                     break;
                 case ThreadPriority.AboveNormal:
-                    ProduceWithPriority(_queueAboveNormal, job);
+                    AddJobToQueue(_queueAboveNormal, job);
                     break;
                 case ThreadPriority.BelowNormal:
-                    ProduceWithPriority(_queueBelowNormal, job);
+                    AddJobToQueue(_queueBelowNormal, job);
                     break;
                 case ThreadPriority.Lowest:
-                    ProduceWithPriority(_queueLowest, job);
+                    AddJobToQueue(_queueLowest, job);
                     break;
                 default:
-                    ProduceWithPriority(_queueNormal, job);
+                    AddJobToQueue(_queueNormal, job);
                     break;
             }
         }
 
-        private void ProduceWithPriority(Queue<ManagedJob> queue, ManagedJob job)
+        private void AddJobToQueue(Queue<ManagedJob> queue, ManagedJob job)
         {
             lock (_queueLocker)
             {
@@ -354,29 +351,6 @@ namespace GTPool.Sandbox
                 if (!Waiting)
                 {
                     Monitor.Pulse(_queueLocker);
-                }
-            }
-        }
-
-        private void HandleThreadsInitialization()
-        {
-            // TODO: Improve Threads Initialization
-
-            if (IsThreadCreation)
-                return;
-
-            var threadsNeeded = Math.Min((int)Math.Round(Threads.Count * 1.5, 0, MidpointRounding.AwayFromZero), _maxThreads);
-
-            if (NumberOfRemainingJobs > Threads.Count(x => x.Value.Status == ManagedThreadStatus.Waiting))
-            {
-                IsThreadCreation = true;    // TODO: Remove this!
-
-                lock (_threadLocker)
-                {
-                    _queueThread.Enqueue(new ManagedJob((Action<int, string>) LoadThreadQueue,
-                        new object[] {threadsNeeded, string.Empty}, ThreadPriority.Highest, true));
-
-                    Monitor.Pulse(_threadLocker);
                 }
             }
         }
@@ -411,44 +385,48 @@ namespace GTPool.Sandbox
 
         private void JobInvoker(object threadName)
         {
+            var tname = threadName.ToString();
+
             while (true)
             {
-                var job = Consume(threadName.ToString());
+                var job = Consume(tname);
 
                 if (job != null)
                 {
-                    var thread = Threads[threadName.ToString()].SafeThread;
-                    thread.IsBackground = job.IsBackground;
-                    thread.Priority = job.ThreadPriority;
-                    
-                    //Console.WriteLine("Working Thread " + threadName);
-                    job.DoWork(threadName.ToString());
-                    
-                    thread.IsBackground = true;
-                    thread.Priority = ThreadPriority.Normal;
+                    if (Threads.ContainsKey(tname))
+                        Threads[tname].ExecuteJob(job);
                 }
                 else
                 {
-                    //if (!IsMinNumberOfActiveThreads && !IsThreadCreation && !WithWait && !IsThereJob)
-                    if (!IsMinNumberOfActiveThreads && Threads[threadName.ToString()].Status == ManagedThreadStatus.Terminated)
+                    if (NumberOfRemainingJobs == 0 && !IsMinNumberOfActiveThreads
+                        && Threads[tname].Status == ManagedThreadStatus.Retired)
+                    {
                         break;
+                    }
                 }
             }
 
-            Threads.Remove(threadName.ToString());
-            Console.WriteLine("Thread ended " + threadName + " : " + HiResDateTime.UtcNow);
+            Threads.Remove(tname);
+            Console.WriteLine("Thread ended " + tname + " : " + HiResDateTime.UtcNow);
         }
 
         private ManagedJob Consume(string threadName)
         {
-            HandleThreadsInitialization();
 
-            lock (_threadLocker)
+            // TODO: STILL it doesn't work!
+            if (!IsThreadCreation)
             {
-                if (_queueThread.Count > 0)
-                    return _queueThread.Dequeue();
+                IsThreadCreation = true;
+
+                ManagedJob job;
+                if (InitializeNewThreads(out job))
+                {
+                    return job;
+                }
+
+                IsThreadCreation = false;
             }
-            
+
             lock (_queueLocker)
             {
                 if (!Waiting)
@@ -473,6 +451,55 @@ namespace GTPool.Sandbox
             }
 
             return null;
+        }
+
+        // TODO: FIX THIS 
+        private bool InitializeNewThreads(out ManagedJob job)
+        {
+            job = null;
+
+            if (Waiting || NumberOfRemainingJobs == 0)
+                return false;
+
+            if (Threads.Any(x => x.Value.Status == ManagedThreadStatus.Waiting ||
+                                 x.Value.Status == ManagedThreadStatus.Retired))
+            {
+                lock (_queueLocker)
+                {
+                    Monitor.PulseAll(_queueLocker);
+                }
+            }
+            else
+            {
+                lock (_variableLocker)
+                {
+                    if (Threads.Count(x => x.Value.Status == ManagedThreadStatus.Ready) < NumberOfRemainingJobs)
+                    {
+                        var threadsNeeded =
+                            Math.Min((int) Math.Round(Threads.Count*1.5, 0, MidpointRounding.AwayFromZero), _maxThreads);
+
+                        job = new ManagedJob((Action<int, string>) LoadThreadQueue,
+                            new object[] {threadsNeeded, string.Empty}, ThreadPriority.Highest, true);
+                    }
+                }
+            }
+
+            return job != null;
+
+            //var threadsNeeded = Math.Min((int)Math.Round(Threads.Count * 1.5, 0, MidpointRounding.AwayFromZero), _maxThreads);
+
+            //if (NumberOfRemainingJobs > Threads.Count(x => x.Value.Status == ManagedThreadStatus.Waiting))
+            //{
+            //    IsThreadCreation = true;    // TODO: Remove this!
+
+            //    lock (_threadLocker)
+            //    {
+            //        _queueThread.Enqueue(new ManagedJob((Action<int, string>)LoadThreadQueue,
+            //            new object[] { threadsNeeded, string.Empty }, ThreadPriority.Highest, true));
+
+            //        //Monitor.Pulse(_threadLocker);
+            //    }
+            //}
         }
 
         #region Private Properties
@@ -607,30 +634,36 @@ namespace GTPool.Sandbox
     public class ManagedThread
     {
         private const int Timeout = 30000;
-        private const int MaxIdleLifeCycles = 3;
-        private const int StartIdleLifeCycles = 1;
+        private const int MaxIdleLifeCycles = 4;
+        private const int StartIdleLifeCycles = 0;
+        private readonly Thread _instance;
+        private readonly bool _defaultIsBackground;
+        private readonly ThreadPriority _defaultThreadPriority;
         private int _idleLifeCycles;
         
         public ManagedThread(Thread thread)
         {
-            SafeThread = thread;
+            _instance = thread;
+            _defaultThreadPriority = thread.Priority;
+            _defaultIsBackground = thread.IsBackground;
+
+            Name = thread.Name;
+            Status = ManagedThreadStatus.NotStarted;
         }
 
-        public Thread SafeThread { get; private set; }
+        public string Name { get; private set; }
         public ManagedThreadStatus Status { get; private set; }
 
         public void Start()
         {
-            Status = ManagedThreadStatus.Running;
-            _idleLifeCycles = StartIdleLifeCycles;
-            SafeThread.Start();
+            Start(null);
         }
 
         public void Start(object param)
         {
-            Status = ManagedThreadStatus.Running;
+            Status = ManagedThreadStatus.Ready;
             _idleLifeCycles = StartIdleLifeCycles;
-            SafeThread.Start(param);
+            _instance.Start(param);
         }
 
         public void Wait(object queuelock)
@@ -649,16 +682,33 @@ namespace GTPool.Sandbox
             _idleLifeCycles++;
 
             Status = _idleLifeCycles <= MaxIdleLifeCycles 
-                ? ManagedThreadStatus.Running 
-                : ManagedThreadStatus.Terminated;
+                ? ManagedThreadStatus.Ready 
+                : ManagedThreadStatus.Retired;
+        }
+
+        public void ExecuteJob(ManagedJob job)
+        {
+            _instance.IsBackground = job.IsBackground;
+            _instance.Priority = job.ThreadPriority;
+
+            Status = ManagedThreadStatus.Working;
+         
+            job.DoWork(Name);
+
+            _instance.IsBackground = _defaultIsBackground;
+            _instance.Priority = _defaultThreadPriority;
+            
+            Status = ManagedThreadStatus.Ready;
         }
     }
 
     public enum ManagedThreadStatus
     {
-        Terminated,
+        Retired,
         Waiting,
-        Running
+        Ready,
+        Working,
+        NotStarted
     }
 
     public class HiResDateTime
