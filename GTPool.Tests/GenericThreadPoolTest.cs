@@ -9,13 +9,41 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 namespace GTPool.Tests
 {
     [TestClass]
-    [Category("GenericThreadPool")]
     public class GenericThreadPoolTest
     {
         [TestMethod]
-        public void gtp_static_instance_exists()
+        [TestCategory("GenericThreadPool")]
+        public void static_instance_exists()
         {
-            Assert.IsNotNull(GenericThreadPool.Instance);
+            Assert.IsNotNull(GenericThreadPool<GtpAsync>.Instance);
         }
+
+        [TestMethod]
+        [TestCategory("GenericThreadPool")]
+        public void initialized_instance_has_correct_settings()
+        {
+            var settings = new CustomSettings(5, 15, 3000);
+
+            using (var gtp = GenericThreadPool<GtpAsync>.Init(settings))
+            {
+                Assert.AreEqual(settings, gtp.Settings);
+            }
+        }
+
+        [TestMethod]
+        [TestCategory("GenericThreadPool")]
+        public void initialized_instance_cant_change_settings()
+        {
+            var settings = GenericThreadPool<GtpAsync>.Init().Settings;
+
+            var newSettings = GenericThreadPool<GtpAsync>
+                .Init(new CustomSettings(5, 15, 3500)).Settings;
+
+            Assert.AreEqual(settings, newSettings);
+
+            GenericThreadPool<GtpAsync>.Instance.Dispose();
+        }
+
+
     }
 }

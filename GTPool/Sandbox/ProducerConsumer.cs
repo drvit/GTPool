@@ -218,6 +218,7 @@ namespace GTPool.Sandbox
     /// 7. Configuration Initializer interface and class
     /// 8. Set job priority     -- Done
     /// 9. Add unit tests
+    /// 10. Implement IDispose. It should wait till all threads are finished working before cleaning up
     /// -------------------------------------------------------------------------------
     /// TODO: From the proposal
     /// 1. Dequeue tasks depending on the priority (Thread Prioriry)	-- done
