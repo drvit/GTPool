@@ -4,23 +4,23 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 
 namespace GTPool.Tests.Sandbox
 {
-    [TestClass]
-    public class SimpleThreadTest
-    {
-        [TestMethod] 
-        public void TestSimpleThreadClass()
-        {
-            var threadJobClass = new ThreadPool();
-            Assert.IsInstanceOfType(threadJobClass, typeof(ThreadPool));
-        }
+    //[TestClass]
+    //public class SimpleThreadTest
+    //{
+    //    [TestMethod] 
+    //    public void TestSimpleThreadClass()
+    //    {
+    //        var threadJobClass = new ThreadPool();
+    //        Assert.IsInstanceOfType(threadJobClass, typeof(ThreadPool));
+    //    }
 
-        [TestMethod]
-        public void TestSimpleThreadReturnsResult()
-        {
-            IDictionary<string, int> results = new Dictionary<string, int>();
-            //ProducerConsumer.Main(results);
+    //    [TestMethod]
+    //    public void TestSimpleThreadReturnsResult()
+    //    {
+    //        IDictionary<string, int> results = new Dictionary<string, int>();
+    //        //ProducerConsumer.Main(results);
 
-            Assert.IsNotNull(results);
-        }
-    }
+    //        Assert.IsNotNull(results);
+    //    }
+    //}
 }

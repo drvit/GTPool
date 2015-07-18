@@ -414,17 +414,20 @@ namespace GTPool.Sandbox
         {
 
             // TODO: STILL it doesn't work!
-            if (!IsThreadCreation)
+            lock (_variableLocker)
             {
-                IsThreadCreation = true;
-
-                ManagedJob job;
-                if (InitializeNewThreads(out job))
+                if (!_isThreadCreation)
                 {
-                    return job;
-                }
+                    _isThreadCreation = true;
 
-                IsThreadCreation = false;
+                    ManagedJob job;
+                    if (InitializeNewThreads(out job))
+                    {
+                        return job;
+                    }
+
+                    _isThreadCreation = false;
+                }
             }
 
             lock (_queueLocker)
@@ -456,35 +459,35 @@ namespace GTPool.Sandbox
         // TODO: FIX THIS 
         private bool InitializeNewThreads(out ManagedJob job)
         {
-            job = null;
-
-            if (Waiting || NumberOfRemainingJobs == 0)
-                return false;
-
-            if (Threads.Any(x => x.Value.Status == ManagedThreadStatus.Waiting ||
-                                 x.Value.Status == ManagedThreadStatus.Retired))
+            lock (_queueLocker)
             {
-                lock (_queueLocker)
+                job = null;
+
+                var isThereJobs = _queueHighest.Count + _queueAboveNormal.Count + _queueNormal.Count +
+                                  _queueBelowNormal.Count + _queueLowest.Count > 0;
+
+                if (_withWait || !isThereJobs)
+                    return false;
+
+                if (_threads.Any(x => x.Value.Status == ManagedThreadStatus.Waiting ||
+                                      x.Value.Status == ManagedThreadStatus.Retired))
                 {
-                    Monitor.PulseAll(_queueLocker);
+                    Monitor.Pulse(_queueLocker);
                 }
-            }
-            else
-            {
-                lock (_variableLocker)
+                else
                 {
-                    if (Threads.Count(x => x.Value.Status == ManagedThreadStatus.Ready) < NumberOfRemainingJobs)
+                    if (_threads.Count(x => x.Value.Status == ManagedThreadStatus.Ready) < NumberOfRemainingJobs)
                     {
                         var threadsNeeded =
-                            Math.Min((int) Math.Round(Threads.Count*1.5, 0, MidpointRounding.AwayFromZero), _maxThreads);
+                            Math.Min((int) Math.Round(_threads.Count*1.5, 0, MidpointRounding.AwayFromZero), _maxThreads);
 
                         job = new ManagedJob((Action<int, string>) LoadThreadQueue,
                             new object[] {threadsNeeded, string.Empty}, ThreadPriority.Highest, true);
                     }
                 }
-            }
 
-            return job != null;
+                return job != null;
+            }
 
             //var threadsNeeded = Math.Min((int)Math.Round(Threads.Count * 1.5, 0, MidpointRounding.AwayFromZero), _maxThreads);
 
@@ -606,6 +609,8 @@ namespace GTPool.Sandbox
         public ThreadPriority ThreadPriority { get; private set; }
 
         public bool IsBackground { get; private set; }
+
+
 
         public void DoWork(string threadName)
         {
