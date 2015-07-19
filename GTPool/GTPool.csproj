@@ -39,7 +39,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions.cs" />
     <Compile Include="GenericThreadPool.cs" />
+    <Compile Include="GtpException.cs" />
     <Compile Include="IGtpMode.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Sandbox\ProducerConsumer.cs" />

@@ -1,4 +1,5 @@
 ﻿using System;
+using System.CodeDom;
 using System.Threading;
 
 namespace GTPool
@@ -33,7 +34,7 @@ namespace GTPool
         }
 
         
-        public static GenericThreadPool<TMode> Init()
+        public static GenericThreadPool<TMode> InitT()
         {
             return Init(new CustomSettings());
         }
@@ -52,7 +53,11 @@ namespace GTPool
             if (_settings == null)
                 _settings = settings;
 
-            _gtpMode = new TMode();
+            if (_gtpMode == null)
+                _gtpMode = new TMode();
+            else 
+                if ((new TMode()).GetType() != _gtpMode.GetType())
+                    throw new GtpException(GtpExceptions.IncompatibleGtpMode);
         }
 
 
@@ -112,6 +117,7 @@ namespace GTPool
         {
             get { return _idleTime; }
         }
-
     }
+
+    
 }

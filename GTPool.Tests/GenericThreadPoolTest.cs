@@ -44,6 +44,31 @@ namespace GTPool.Tests
             GenericThreadPool<GtpAsync>.Instance.Dispose();
         }
 
+        [TestMethod]
+        [TestCategory("GenericThreadPool")]
+        public void initialized_instance_cant_change_mode_before_dispose()
+        {
+            GenericThreadPool<GtpAsync>.Init();
+
+            var modeException = new Exception();
+
+            try
+            {
+                GenericThreadPool<GtpSync>.Init();
+            }
+            catch (GtpException ex)
+            {
+                modeException = ex;
+            }
+            catch (Exception ex)
+            {
+                modeException = ex;
+            }
+            finally
+            {
+                Assert.AreEqual(modeException.Message, GtpExceptions.IncompatibleGtpMode.ToDescription());
+            }
+        }
 
     }
 }
