@@ -222,9 +222,9 @@ namespace GTPool.Sandbox
     /// -------------------------------------------------------------------------------
     /// TODO: From the proposal
     /// 1. Dequeue tasks depending on the priority (Thread Prioriry)	-- done
-    /// 2. Define an Interface to add tasks (ITask)	
+    /// 2. Define an Interface to add tasks (ITask)	            -- done (not an interface, but a class)
     /// 3. Thread Pool Manager dequeue a task and execute       -- done
-    /// 4. Make the Thread Pool static (singleton?)	
+    /// 4. Make the Thread Pool static (singleton?)	            -- done
     /// 5. Define the size of the pool of threads               -- done
     /// 6. Allow changing the size of the pool of threads       -- done
     /// 7. Queue tasks in Thread Pool as closures               -- done
@@ -232,7 +232,7 @@ namespace GTPool.Sandbox
     /// 9. Set priority to execute the task	                    -- done
     /// 10. Allow to abort the task if it hasn't been executed yet	
     /// 11. Benchmark the execution	
-    /// 12. Unit test the Thread Pool	
+    /// 12. Unit test the Thread Pool	                        -- in progress (TDD almost done, BDD not started)
     /// 13. Create a Demo Application	                        -- in progress
     public class ThreadPool
     {
@@ -610,8 +610,6 @@ namespace GTPool.Sandbox
         public ThreadPriority ThreadPriority { get; private set; }
 
         public bool IsBackground { get; private set; }
-
-
 
         public void DoWork(string threadName)
         {

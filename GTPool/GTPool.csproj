@@ -43,6 +43,8 @@
     <Compile Include="GenericThreadPool.cs" />
     <Compile Include="GtpException.cs" />
     <Compile Include="IGtpMode.cs" />
+    <Compile Include="ManagedJob.cs" />
+    <Compile Include="ManagedThread.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Sandbox\ProducerConsumer.cs" />
   </ItemGroup>

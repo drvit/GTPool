@@ -17,13 +17,15 @@ namespace GTPool
             : base(gtpException.ToDescription(), inner)
         {
         }
-
-
     }
 
     public enum GtpExceptions
     {
         [Description("Thread Pool already initialized in a different Mode")]
-        IncompatibleGtpMode
+        IncompatibleGtpMode,
+        [Description("Settings have been disposed or not initialized. Use Init() to initialize the configuration settings.")]
+        SettingsNotInitialized,
+        [Description("Instance is disposed.")]
+        InstanceIsDisposed
     }
 }

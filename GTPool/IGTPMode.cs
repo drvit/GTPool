@@ -8,6 +8,8 @@ namespace GTPool
     public interface IGtpMode
     {
         bool WithWait { get; }
+
+        Delegate DisposeCallback { get; }
     }
 
     public class GtpSync : IGtpMode
@@ -16,6 +18,11 @@ namespace GTPool
         {
             get { return true; }
         }
+
+        public Delegate DisposeCallback
+        {
+            get { return null; }
+        }
     }
 
     public class GtpAsync : IGtpMode
@@ -23,6 +30,11 @@ namespace GTPool
         public bool WithWait
         {
             get { return false; }
-        }        
+        }
+
+        public Delegate DisposeCallback
+        {
+            get { return null; }
+        }
     }
 }
