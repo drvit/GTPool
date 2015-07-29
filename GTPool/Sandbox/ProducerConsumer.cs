@@ -115,7 +115,7 @@ namespace GTPool.Sandbox
             Action<int, string> job = (c, wt) =>
             {
                 Thread.Sleep((int)cars[c][1]);
-                Console.WriteLine("My car is: " + cars[c][0] + " - WT: " + wt + " : " + HiResDateTime.UtcNow);
+                Console.WriteLine("My car is: " + cars[c][0] + " - WT: " + wt + " : " + Utils.HiResDateTime.UtcNow);
             };
 
             for (var t = 0; t < cars.Count(); t++)
@@ -127,7 +127,7 @@ namespace GTPool.Sandbox
             Action<string> job2 = (wt) =>
             {
                 Thread.Sleep(3000);
-                Console.WriteLine("I have got " + cars.Count() + " cars - WT: " + wt + " : " + HiResDateTime.UtcNow);
+                Console.WriteLine("I have got " + cars.Count() + " cars - WT: " + wt + " : " + Utils.HiResDateTime.UtcNow);
             };
 
             pman.AddJob(job2, new object[] {string.Empty}, ThreadPriority.AboveNormal, false);
@@ -136,7 +136,7 @@ namespace GTPool.Sandbox
             Action<string> job4 = wt =>
             {
                 Thread.Sleep(3000);
-                Console.WriteLine("My other car is a MERCEDES. - WT: " + wt + " : " + HiResDateTime.UtcNow);
+                Console.WriteLine("My other car is a MERCEDES. - WT: " + wt + " : " + Utils.HiResDateTime.UtcNow);
             };
 
             pman.AddJob(job4, new object[] { string.Empty }, ThreadPriority.Highest, true);
@@ -148,7 +148,7 @@ namespace GTPool.Sandbox
             Action<string> job3 = (wt) =>
             {
                 Thread.Sleep(3000);
-                Console.WriteLine("I have got an other car that is not in the list. :) - WT: " + wt + " : " + HiResDateTime.UtcNow);
+                Console.WriteLine("I have got an other car that is not in the list. :) - WT: " + wt + " : " + Utils.HiResDateTime.UtcNow);
             };
 
             pman.AddJob(job3, new object[] { string.Empty }, ThreadPriority.Highest, false);
@@ -226,7 +226,7 @@ namespace GTPool.Sandbox
     /// 3. Thread Pool Manager dequeue a task and execute       -- done
     /// 4. Make the Thread Pool static (singleton?)	            -- done
     /// 5. Define the size of the pool of threads               -- done
-    /// 6. Allow changing the size of the pool of threads       -- done
+    /// 6. Allow changing the size of the pool of threads       -- done (can change only on Init())
     /// 7. Queue tasks in Thread Pool as closures               -- done
     /// 8. Add a callback function to the task                  -- done
     /// 9. Set priority to execute the task	                    -- done
@@ -281,7 +281,7 @@ namespace GTPool.Sandbox
             LoadThreadQueue(_withWait ? _minThreads : _maxThreads);
         }
 
-        public Dictionary<string, ManagedThread> Threads
+        private Dictionary<string, ManagedThread> Threads
         {
             get
             {
@@ -358,7 +358,7 @@ namespace GTPool.Sandbox
         
         private void LoadThreadQueue(int numberOfThreads, string wt)
         {
-            Console.WriteLine("LoadThreadQueue - WT " + wt + " : " + HiResDateTime.UtcNow);
+            Console.WriteLine("LoadThreadQueue - WT " + wt + " : " + Utils.HiResDateTime.UtcNow);
             LoadThreadQueue(numberOfThreads);
         }
 
@@ -377,7 +377,7 @@ namespace GTPool.Sandbox
                     Priority = ThreadPriority.Normal
                 }));
 
-                Console.WriteLine("Thread created " + threadName + " : " + HiResDateTime.UtcNow);
+                Console.WriteLine("Thread created " + threadName + " : " + Utils.HiResDateTime.UtcNow);
                 Threads[threadName].Start(threadName);
             }
 
@@ -408,7 +408,7 @@ namespace GTPool.Sandbox
             }
 
             Threads.Remove(tname);
-            Console.WriteLine("Thread ended " + tname + " : " + HiResDateTime.UtcNow);
+            Console.WriteLine("Thread ended " + tname + " : " + Utils.HiResDateTime.UtcNow);
         }
 
         private ManagedJob Consume(string threadName)
@@ -713,36 +713,5 @@ namespace GTPool.Sandbox
         Ready,
         Working,
         NotStarted
-    }
-
-    public class HiResDateTime
-    {
-        private static long _lastTimeStamp = DateTime.UtcNow.Ticks;
-
-        public static long UtcNowTicks
-        {
-            get
-            {
-                long orig, newval;
-                do
-                {
-                    orig = _lastTimeStamp;
-                    var now = DateTime.UtcNow.Ticks;
-                    newval = Math.Max(now, orig + 1);
-                } while (Interlocked.CompareExchange
-                             (ref _lastTimeStamp, newval, orig) != orig);
-
-                return newval;
-            }
-        }
-
-        public static string UtcNow
-        {
-            get
-            {
-                //return new DateTime(newval, DateTimeKind.Utc).ToString("o");
-                return new DateTime(UtcNowTicks, DateTimeKind.Utc).ToString("HH:mm.ss:fff");
-            }
-        }
     }
 }
