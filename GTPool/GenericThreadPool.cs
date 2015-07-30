@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
+using System.Windows.Markup;
 
 namespace GTPool
 {
@@ -281,18 +282,11 @@ namespace GTPool
                 }
                 else
                 {
-                    var threadsNeeded =
-                        Math.Min((int) Math.Round(Threads.Count*1.5, 0, MidpointRounding.AwayFromZero),
-                            Settings.MaxThreads);
-
-                    LoadThreadQueue(threadsNeeded);
+                    LoadThreadQueue(JobsCount);
                 }
             }
 
-            lock (_variableLocker)
-            {
-                _creatingThreads = false;
-            }
+            CreatingThreads = false;
         }
 
         private bool StallThreads
@@ -404,6 +398,13 @@ namespace GTPool
                 lock (_variableLocker)
                 {
                     return _creatingThreads;
+                }
+            }
+            set
+            {
+                lock (_variableLocker)
+                {
+                    _creatingThreads = value;
                 }
             }
         }
