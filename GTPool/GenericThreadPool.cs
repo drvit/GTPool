@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
-using System.Windows.Markup;
 
 namespace GTPool
 {
@@ -18,53 +17,52 @@ namespace GTPool
         private readonly Queue<ManagedJob> _queueNormal = new Queue<ManagedJob>();
         private readonly Queue<ManagedJob> _queueBelowNormal = new Queue<ManagedJob>();
         private readonly Queue<ManagedJob> _queueLowest = new Queue<ManagedJob>();
+        private HashSet<int> _cancelledJobs = new HashSet<int>(); 
         private int _threadId;
+        private int _jobsCount;
         private bool _waiting;
         private bool _disposeThreads;
         private bool _creatingThreads;
-        private int _jobsCount;
         private bool _stallThreads;
 
         static GenericThreadPool() { }
-        
+
         private GenericThreadPool() { }
 
-        public static GenericThreadPool Instance
-        {
-            get { return _instance; }
-        }
-
+        public static GenericThreadPool Instance { get { return _instance; } }
         public CustomSettings Settings { get; private set; }
-
         public IGtpMode GtpMode { get; private set; }
 
         public static GenericThreadPool Init()
         {
-            return Init<GtpAsync>();
+            return Init(new GtpAsync(), new CustomSettings());
         }
-        
-        public static GenericThreadPool Init<TMode>()
-            where TMode : IGtpMode, new()
+
+        public static GenericThreadPool Init<TMode>(int numberOfThreads, int idleTime)
+            where TMode : GtpSync, new()
         {
-            if (typeof(TMode) == typeof(GtpAsync))
-                return Init<TMode>(new CustomAsyncSettings());
-
-            return Init<TMode>(new CustomSyncSettings());
+            return Init(new TMode(), new CustomSettings(numberOfThreads, idleTime));
         }
 
-        public static GenericThreadPool Init<TMode>(CustomSettings settings)
+        public static GenericThreadPool Init<TMode>(int minThreads, int maxThreads, int idleTime)
+            where TMode : GtpAsync, new()
+        {
+            return Init(new TMode(), new CustomSettings(minThreads, maxThreads, idleTime));
+        }
+
+        private static GenericThreadPool Init<TMode>(TMode gtpMode, CustomSettings settings)
             where TMode : IGtpMode, new()
         {
             Utils.Log("###############################################");
             Utils.Log("Generic Thread Pool Initialization");
 
-            InitializeInstance<TMode>(settings);
+            InitializeInstance(gtpMode, settings);
             _instance.LoadThreadQueue();
 
             return _instance;
         }
 
-        private static void InitializeInstance<TMode>(CustomSettings settings)
+        private static void InitializeInstance<TMode>(TMode gtpMode, CustomSettings settings)
             where TMode : IGtpMode, new()
         {
             if (_instance == null)
@@ -74,7 +72,7 @@ namespace GTPool
 
             if (_instance.GtpMode == null)
             {
-                _instance.GtpMode = new TMode();
+                _instance.GtpMode = gtpMode;
                 _instance.Waiting = _instance.GtpMode.WithWait;
             }
             else
@@ -96,66 +94,6 @@ namespace GTPool
             _instance.StallThreads = false;
         }
 
-        public static void AddJob(ManagedAsyncJob job)
-        {
-            if (_instance == null)
-                throw new GtpException(GtpExceptions.InstanceIsDisposed);
-
-            if (_instance.GtpMode.WithWait != job.GtpMode.WithWait)
-                throw new GtpException(GtpExceptions.IncompatibleGtpMode);
-
-            if (_instance.Settings == null)
-                throw new GtpException(GtpExceptions.SettingsNotInitialized);
-
-            _instance.AddJobToPriorityQueue(job);
-        }
-
-        public void AddJob(ManagedSyncJob job)
-        {
-            if (GtpMode.WithWait != job.GtpMode.WithWait)
-                throw new GtpException(GtpExceptions.IncompatibleGtpMode);
-
-            AddJobToPriorityQueue(job);
-        }
-
-        private void AddJobToPriorityQueue(ManagedJob job)
-        {
-            switch (job.ThreadPriority)
-            {
-                case ThreadPriority.Highest:
-                    EnqueueJob(_queueHighest, job);
-                    break;
-                case ThreadPriority.AboveNormal:
-                    EnqueueJob(_queueAboveNormal, job);
-                    break;
-                case ThreadPriority.BelowNormal:
-                    EnqueueJob(_queueBelowNormal, job);
-                    break;
-                case ThreadPriority.Lowest:
-                    EnqueueJob(_queueLowest, job);
-                    break;
-                default:
-                    EnqueueJob(_queueNormal, job);
-                    break;
-            }
-        }
-
-        private void EnqueueJob(Queue<ManagedJob> queue, ManagedJob job)
-        {
-            lock (_queueLocker)
-            {
-                StallThreads = false;
-                JobsCount++;
-
-                queue.Enqueue(job);
-
-                if (!Waiting)
-                {
-                    Monitor.Pulse(_queueLocker);
-                }
-            }
-        }
-
         private void LoadThreadQueue()
         {
             LoadThreadQueue(!Waiting ? Settings.MinThreads : Settings.MaxThreads);
@@ -168,7 +106,7 @@ namespace GTPool
             while (Threads.Count < Math.Min(Settings.MaxThreads, numberOfThreads))
             {
                 if (StallThreads) break;
-                
+
                 var threadName = NextThreadName;
 
                 Threads.Add(threadName, new ManagedThread(new Thread(JobInvoker)
@@ -211,6 +149,61 @@ namespace GTPool
             Utils.Log(string.Format(">>>>>> Thread destroyed {0} <<<<<<", threadName));
         }
 
+        public static void AddJob(ManagedAsyncJob job)
+        {
+            ValidateAsyncMode(job);
+            
+            _instance.AddJobToPriorityQueue(job);
+        }
+
+        public void AddJob(ManagedSyncJob job)
+        {
+            ValidateSyncMode(job);
+            
+            AddJobToPriorityQueue(job);
+        }
+
+        private void AddJobToPriorityQueue(ManagedJob job)
+        {
+            switch (job.ThreadPriority)
+            {
+                case ThreadPriority.Highest:
+                    EnqueueJob(_queueHighest, job);
+                    break;
+                case ThreadPriority.AboveNormal:
+                    EnqueueJob(_queueAboveNormal, job);
+                    break;
+                case ThreadPriority.BelowNormal:
+                    EnqueueJob(_queueBelowNormal, job);
+                    break;
+                case ThreadPriority.Lowest:
+                    EnqueueJob(_queueLowest, job);
+                    break;
+                default:
+                    EnqueueJob(_queueNormal, job);
+                    break;
+            }
+        }
+
+        private void EnqueueJob(Queue<ManagedJob> queue, ManagedJob job)
+        {
+            lock (_queueLocker)
+            {
+                if (_cancelledJobs == null)
+                    _cancelledJobs = new HashSet<int>();
+
+                StallThreads = false;
+                JobsCount++;
+
+                queue.Enqueue(job);
+
+                if (!Waiting)
+                {
+                    Monitor.Pulse(_queueLocker);
+                }
+            }
+        }
+        
         private ManagedJob DequeueJob(string threadName)
         {
             BaunceThreadPool();
@@ -219,29 +212,37 @@ namespace GTPool
             {
                 if (!Waiting)
                 {
-                    ManagedJob ret = null;
+                    ManagedJob job = null;
 
                     if (_queueHighest.Any())
-                        ret = _queueHighest.Dequeue();
+                        job = _queueHighest.Dequeue();
 
                     else if (_queueAboveNormal.Any())
-                        ret = _queueAboveNormal.Dequeue();
+                        job = _queueAboveNormal.Dequeue();
 
                     else if (_queueNormal.Any())
-                        ret = _queueNormal.Dequeue();
+                        job = _queueNormal.Dequeue();
 
                     else if (_queueBelowNormal.Any())
-                        ret = _queueBelowNormal.Dequeue();
+                        job = _queueBelowNormal.Dequeue();
 
                     else if (_queueLowest.Any())
-                        ret = _queueLowest.Dequeue();
+                        job = _queueLowest.Dequeue();
 
-                    if (ret != null)
+                    if (job != null)
                     {
                         JobsCount--;
-                        return ret;
+
+                        if (_cancelledJobs.Contains(job.JobId))
+                        {
+                            _cancelledJobs.Remove(job.JobId);
+                            return null;
+                        }
+
+                        return job;
                     }
 
+                    _cancelledJobs = null;
                     StallThreads = true;
                 }
 
@@ -261,14 +262,12 @@ namespace GTPool
 
             lock (_variableLocker)
             {
-                _creatingThreads = true;
-
                 areThereMoreJobsThanThreads = _jobsCount > _threads.Count(x =>
                     x.Value.Status != ManagedThreadStatus.Working &&
                     x.Value.Status != ManagedThreadStatus.NotStarted);
 
-                areThereThreadsWaiting = Threads.Any(x => x.Value.Status == ManagedThreadStatus.Waiting ||
-                                                          x.Value.Status == ManagedThreadStatus.Retired);
+                areThereThreadsWaiting = _threads.Any(x => x.Value.Status == ManagedThreadStatus.Waiting ||
+                                                           x.Value.Status == ManagedThreadStatus.Retired);
             }
 
             if (areThereMoreJobsThanThreads)
@@ -287,6 +286,32 @@ namespace GTPool
             }
 
             CreatingThreads = false;
+        }
+
+        public static void CancelJob(ManagedAsyncJob job)
+        {
+            ValidateAsyncMode(job);
+
+            _instance.CancelJob(job.JobId);
+        }
+
+        public void CancelJob(ManagedSyncJob job)
+        {
+            ValidateSyncMode(job);
+
+            CancelJob(job.JobId);
+        }
+
+        private void CancelJob(int jobid)
+        {
+            if (jobid <= 0)
+                return;
+
+            lock (_queueLocker)
+            {
+                if (!_cancelledJobs.Contains(jobid))
+                    _cancelledJobs.Add(jobid);
+            }
         }
 
         private bool StallThreads
@@ -397,7 +422,13 @@ namespace GTPool
             {
                 lock (_variableLocker)
                 {
-                    return _creatingThreads;
+                    if (_creatingThreads == false)
+                    {
+                        _creatingThreads = true;
+                        return false;
+                    }
+
+                    return true;
                 }
             }
             set
@@ -407,6 +438,24 @@ namespace GTPool
                     _creatingThreads = value;
                 }
             }
+        }
+
+        private static void ValidateAsyncMode(ManagedAsyncJob job)
+        {
+            if (_instance == null)
+                throw new GtpException(GtpExceptions.InstanceIsDisposed);
+
+            if (_instance.GtpMode.WithWait != job.GtpMode.WithWait)
+                throw new GtpException(GtpExceptions.IncompatibleGtpMode);
+
+            if (_instance.Settings == null)
+                throw new GtpException(GtpExceptions.SettingsNotInitialized);
+        }
+
+        private void ValidateSyncMode(ManagedSyncJob job)
+        {
+            if (GtpMode.WithWait != job.GtpMode.WithWait)
+                throw new GtpException(GtpExceptions.IncompatibleGtpMode);
         }
 
         public static void End()
@@ -461,80 +510,38 @@ namespace GTPool
         }
     }
 
-    public class CustomSyncSettings : CustomSettings
-    {
-        public CustomSyncSettings() : base(new GtpSync())
-        {
-        }
-
-        public CustomSyncSettings(int numberOfThreads, int idleTime)
-            : base(new GtpSync(), 1, numberOfThreads, idleTime)
-        {
-        }
-    }
-
-    public class CustomAsyncSettings : CustomSettings
-    {
-        public CustomAsyncSettings() : base(new GtpAsync())
-        {
-        }
-
-        public CustomAsyncSettings(int minThreads, int maxThreads, int idleTime) 
-            : base(new GtpAsync(), minThreads, maxThreads, idleTime)
-        {
-        }
-    }
-
-    public abstract class CustomSettings
+    public class CustomSettings
     {
         private const int DefaultMinThreads = 2;
         private const int DefaultMaxThreads = 200;
-        private int _minThreads;
-        private int _maxThreads;
-        private readonly int _idleTime;
+        private const int DefaultIdleTime = 500;
 
-        protected CustomSettings(IGtpMode gtpMode)
-            : this(gtpMode, DefaultMinThreads, DefaultMaxThreads, 5000)
+        public CustomSettings()
+            : this(DefaultMinThreads, DefaultMaxThreads, DefaultIdleTime)
         { }
 
-        protected CustomSettings(IGtpMode gtpMode, int minThreads, int maxThreads, int idleTime)
+        public CustomSettings(int numberOfThreads, int idleTime)
+            : this(DefaultMinThreads, numberOfThreads, idleTime)
+        { }
+
+        public CustomSettings(int minThreads, int maxThreads, int idleTime)
         {
-            MinThreads = minThreads;
-            MaxThreads = maxThreads;
-            GtpMode = gtpMode;
-            _idleTime = idleTime;
+            MaxThreads = Math.Min(Math.Max(DefaultMinThreads, maxThreads), DefaultMaxThreads);
+            MinThreads = Math.Max(Math.Min(DefaultMaxThreads, minThreads), DefaultMinThreads);
+            MinThreads = Math.Min(MinThreads, MaxThreads);
+
+            IdleTime = idleTime;
         }
 
-        public int MinThreads
+        public int MinThreads { get; private set; }
+
+        public int MaxThreads { get; private set; }
+
+        public int NumberOfThreads
         {
-            get { return _minThreads > _maxThreads ? _maxThreads : _minThreads; }
-            private set
-            {
-                _minThreads = value > DefaultMaxThreads
-                    ? DefaultMaxThreads
-                    : value < DefaultMinThreads ? DefaultMinThreads : value;
-            }
+            get { return MaxThreads; }
         }
 
-        public int MaxThreads
-        {
-            get { return _maxThreads; }
-            private set
-            {
-                _maxThreads = value < DefaultMinThreads
-                    ? DefaultMinThreads
-                    : value > DefaultMaxThreads ? DefaultMaxThreads : value;
-            }
-        }
-
-        public int IdleTime
-        {
-            get { return _idleTime; }
-        }
-
-        public IGtpMode GtpMode { get; private set; }
-
+        public int IdleTime { get; private set; }
     }
-
-    
 }

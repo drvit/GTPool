@@ -22,11 +22,12 @@ namespace GTPool.Tests
             [TestCategory("GenericThreadPool")]
             public void initialized_instance_has_correct_settings()
             {
-                var settings = new CustomSyncSettings(5, 200);
+                const int numberOfThreads = 5;
+                const int idleTime = 200;
 
-                using (var gtp = GenericThreadPool.Init<GtpSync>(settings))
+                using (var gtp = GenericThreadPool.Init<GtpSync>(numberOfThreads, idleTime))
                 {
-                    Assert.AreEqual(settings, gtp.Settings);
+                    Assert.IsTrue(gtp.Settings.NumberOfThreads == numberOfThreads && gtp.Settings.IdleTime == idleTime);
                 }
             }
 
@@ -34,13 +35,24 @@ namespace GTPool.Tests
             [TestCategory("GenericThreadPool")]
             public void initialized_instance_cant_change_settings()
             {
-                var settings = GenericThreadPool
-                    .Init<GtpAsync>(new CustomAsyncSettings(1, 7, 350)).Settings;
+                const int minThreads = 1;
+                const int maxThreads = 7;
+                const int idleTime = 350;
 
-                var newSettings = GenericThreadPool
-                    .Init<GtpAsync>(new CustomAsyncSettings(5, 15, 3500)).Settings;
+                const int newMinThreads = 5;
+                const int newMaxThreads = 15;
+                const int newIdleTime = 560;
 
-                Assert.AreEqual(settings, newSettings);
+                var gtp = GenericThreadPool
+                    .Init<GtpAsync>(minThreads, maxThreads, idleTime);
+
+                var newGtp = GenericThreadPool
+                    .Init<GtpAsync>(newMinThreads, newMaxThreads, newIdleTime);
+
+                Assert.IsTrue(
+                    gtp.Settings.MinThreads == newGtp.Settings.MinThreads && newGtp.Settings.MinThreads != newMinThreads &&
+                    gtp.Settings.MaxThreads == newGtp.Settings.MaxThreads && newGtp.Settings.MaxThreads != newMaxThreads &&
+                    gtp.Settings.IdleTime == newGtp.Settings.IdleTime && newGtp.Settings.IdleTime != newIdleTime);
 
                 GenericThreadPool.End();
             }
@@ -49,13 +61,13 @@ namespace GTPool.Tests
             [TestCategory("GenericThreadPool")]
             public void initialized_instance_cant_change_mode_before_dispose()
             {
-                GenericThreadPool.Init<GtpAsync>(new CustomAsyncSettings(1, 5, 100));
+                GenericThreadPool.Init<GtpAsync>(1, 5, 100);
 
                 var modeException = new Exception();
 
                 try
                 {
-                    GenericThreadPool.Init<GtpSync>();
+                    GenericThreadPool.Init<GtpSync>(5, 300);
                 }
                 catch (GtpException ex)
                 {
@@ -75,13 +87,13 @@ namespace GTPool.Tests
             [TestCategory("GenericThreadPool")]
             public void disposed_instance_can_be_initialized_with_different_mode()
             {
-                GenericThreadPool.Init<GtpAsync>(new CustomAsyncSettings(1, 5, 100));
+                GenericThreadPool.Init<GtpAsync>(1, 5, 100);
                 GenericThreadPool.End();
 
                 GenericThreadPool instance = null;
                 try
                 {
-                    instance = GenericThreadPool.Init<GtpSync>(new CustomSyncSettings(5, 100));
+                    instance = GenericThreadPool.Init<GtpSync>(5, 100);
                     Assert.IsInstanceOfType(GenericThreadPool.Instance.GtpMode, typeof(GtpSync));
                 }
                 catch (Exception)
@@ -101,7 +113,7 @@ namespace GTPool.Tests
             [TestCategory("GenericThreadPool")]
             public void disposed_instance_is_disposed()
             {
-                GenericThreadPool.Init<GtpAsync>(new CustomAsyncSettings(1, 5, 100));
+                GenericThreadPool.Init<GtpAsync>(1, 5, 100);
                 GenericThreadPool.End();
 
                 Assert.IsNull(GenericThreadPool.Instance);
@@ -119,7 +131,7 @@ namespace GTPool.Tests
 
                 try
                 {
-                    GenericThreadPool.Init<GtpAsync>(new CustomAsyncSettings(1, 3, 100));
+                    GenericThreadPool.Init<GtpAsync>(1, 3, 100);
 
                     Action<bool> job = ret =>
                     {
@@ -149,7 +161,7 @@ namespace GTPool.Tests
 
                 try
                 {
-                    using (var gtp = GenericThreadPool.Init<GtpSync>(new CustomSyncSettings(3, 100)))
+                    using (var gtp = GenericThreadPool.Init<GtpSync>(3, 100))
                     {
                         Action<bool> job = ret =>
                         {
@@ -178,7 +190,7 @@ namespace GTPool.Tests
 
                 try
                 {
-                    GenericThreadPool.Init<GtpAsync>(new CustomAsyncSettings(1, 3, 100));
+                    GenericThreadPool.Init<GtpAsync>(1, 3, 100);
 
                     Func<bool, bool> job = assertRet =>
                     {
@@ -227,7 +239,7 @@ namespace GTPool.Tests
                         isTrue = assertRet;
                     };
 
-                    using (var gtp = GenericThreadPool.Init<GtpSync>(new CustomSyncSettings(3, 100)))
+                    using (var gtp = GenericThreadPool.Init<GtpSync>(3, 100))
                     {
                         gtp.AddJob(new ManagedSyncJob(job, new object[] { true },
                                 callback, new object[] { "Test: SYNC CALBACK" }));
@@ -291,7 +303,7 @@ namespace GTPool.Tests
                         Utils.Log("---------------------------------------------------------------");
                     };
 
-                    GenericThreadPool.Init<GtpAsync>(new CustomAsyncSettings(1, 3, 100));
+                    GenericThreadPool.Init<GtpAsync>(1, 3, 100);
                     GenericThreadPool.AddJob(new ManagedAsyncJob(job1, null, ThreadPriority.Lowest, true));
                     GenericThreadPool.AddJob(new ManagedAsyncJob(job2, null, ThreadPriority.BelowNormal, true));
                     GenericThreadPool.AddJob(new ManagedAsyncJob(job3, null, ThreadPriority.Normal, true));
@@ -356,7 +368,7 @@ namespace GTPool.Tests
                         Utils.Log("---------------------------------------------------------------");
                     };
 
-                    using (var gtp = GenericThreadPool.Init<GtpSync>(new CustomSyncSettings(3, 100)))
+                    using (var gtp = GenericThreadPool.Init<GtpSync>(3, 100))
                     {
                         gtp.AddJob(new ManagedSyncJob(job1, null, ThreadPriority.Lowest, true));
                         gtp.AddJob(new ManagedSyncJob(job2, null, ThreadPriority.BelowNormal, true));
@@ -398,7 +410,7 @@ namespace GTPool.Tests
                         Utils.Log("---------------------------------------------------------------");
                     };
 
-                    GenericThreadPool.Init<GtpAsync>(new CustomAsyncSettings(1, 3, 100));
+                    GenericThreadPool.Init<GtpAsync>(1, 3, 100);
                     GenericThreadPool.AddJob(new ManagedAsyncJob(job1, null, ThreadPriority.BelowNormal, true));
                     GenericThreadPool.AddJob(new ManagedAsyncJob(job2, null, ThreadPriority.AboveNormal, false));
                     GenericThreadPool.End();
@@ -436,7 +448,7 @@ namespace GTPool.Tests
                         Utils.Log("---------------------------------------------------------------");
                     };
 
-                    using (var gtp = GenericThreadPool.Init<GtpSync>(new CustomSyncSettings(3, 100)))
+                    using (var gtp = GenericThreadPool.Init<GtpSync>(3, 100))
                     {
                         gtp.AddJob(new ManagedSyncJob(job1, null, ThreadPriority.BelowNormal, true));
                         gtp.AddJob(new ManagedSyncJob(job2, null, ThreadPriority.AboveNormal, false));
@@ -451,7 +463,6 @@ namespace GTPool.Tests
                     Assert.IsTrue(isJob1True && isJob2True);
                 }
             }
-
 
             [TestMethod]
             [TestCategory("GenericThreadPool")]
@@ -548,7 +559,6 @@ namespace GTPool.Tests
                     };
                     #endregion
 
-
                     Action<int> job = c =>
                     {
                         long ret = 1;
@@ -560,7 +570,7 @@ namespace GTPool.Tests
                         Utils.Log("My car is: " + cars[c][0] + ", with " + ret + " miles run");
                     };
 
-                    GenericThreadPool.Init<GtpAsync>(new CustomAsyncSettings(3, 100, 500));
+                    GenericThreadPool.Init<GtpAsync>(3, 100, 500);
 
                     for (var t = 0; t < cars.Count(); t++)
                     {

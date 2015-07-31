@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Threading;
 
 namespace GTPool
@@ -125,6 +124,7 @@ namespace GTPool
             IsBackground = isBackground;
             GtpMode = gtpMode;
             Status = WorkStatus.NotStarted;
+            JobId = Utils.GenerateUniqueNumber();
 
             _work = new ManagedJobDelegate(work, parameters);
             _callback = new ManagedJobDelegate(callback, callbackParameters);
@@ -134,6 +134,8 @@ namespace GTPool
         private readonly ManagedJobDelegate _work;
         private readonly ManagedJobDelegate _callback;
         private readonly ManagedJobDelegate _onerror;
+
+        public int JobId { get; private set; }
 
         public IGtpMode GtpMode { get; private set; }
 

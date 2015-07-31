@@ -17,6 +17,22 @@ namespace GTPool
 #endif
         }
 
+        private static readonly Random _random = new Random();
+        private static readonly HashSet<int> _randomList = new HashSet<int>();
+        public static int GenerateUniqueNumber()
+        {
+            int newNumber;
+
+            do
+            {
+                newNumber = _random.Next(1000, 999999);
+            } while (_randomList.Contains(newNumber));
+
+            _randomList.Add(newNumber);
+
+            return newNumber;
+        }
+
         public class HiResDateTime
         {
             private static long _lastTimeStamp = DateTime.UtcNow.Ticks;
@@ -32,7 +48,7 @@ namespace GTPool
                         var now = DateTime.UtcNow.Ticks;
                         newval = Math.Max(now, orig + 1);
                     } while (Interlocked.CompareExchange
-                                 (ref _lastTimeStamp, newval, orig) != orig);
+                        (ref _lastTimeStamp, newval, orig) != orig);
 
                     return newval;
                 }
@@ -46,6 +62,7 @@ namespace GTPool
                     return new DateTime(UtcNowTicks, DateTimeKind.Utc).ToString("HH:mm.ss:fff");
                 }
             }
+
         }
     }
 }
