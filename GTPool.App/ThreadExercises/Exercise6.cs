@@ -2,7 +2,7 @@
 using System.Collections;
 using System.Threading;
 
-namespace GTPool.App
+namespace GTPool.App.ThreadExercises
 {
     public class Exercise6
     {

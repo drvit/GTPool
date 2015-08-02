@@ -219,21 +219,6 @@ namespace GTPool.Sandbox
     /// 8. Set job priority     -- Done
     /// 9. Add unit tests
     /// 10. Implement IDispose. It should wait till all threads are finished working before cleaning up
-    /// -------------------------------------------------------------------------------
-    /// TODO: From the proposal
-    /// 1. Dequeue tasks depending on the priority (Thread Prioriry)	-- done
-    /// 2. Define an Interface to add tasks (ITask)	            -- done (not an interface, but a class)
-    /// 3. Thread Pool Manager dequeue a task and execute       -- done
-    /// 4. Make the Thread Pool static (singleton?)	            -- done
-    /// 5. Define the size of the pool of threads               -- done
-    /// 6. Allow changing the size of the pool of threads       -- done (can change only on Init())
-    /// 7. Queue tasks in Thread Pool as closures               -- done
-    /// 8. Add a callback function to the task                  -- done
-    /// 9. Set priority to execute the task	                    -- done
-    /// 10. Allow to abort the task if it hasn't been executed yet	
-    /// 11. Benchmark the execution	
-    /// 12. Unit test the Thread Pool	                        -- in progress (TDD almost done, BDD not started)
-    /// 13. Create a Demo Application	                        -- in progress
     public class ThreadPool
     {
         private readonly object _queueLocker = new object();

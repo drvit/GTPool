@@ -18,23 +18,27 @@ namespace GTPool
             _defaultThreadPriority = thread.Priority;
             _defaultIsBackground = thread.IsBackground;
 
-            Name = thread.Name;
             Status = ManagedThreadStatus.NotStarted;
         }
 
-        public string Name { get; private set; }
         public ManagedThreadStatus Status { get; private set; }
 
         public void Start()
         {
-            Start(null);
+            Initialize();
+            _instance.Start();
         }
 
         public void Start(object param)
         {
+            Initialize();
+            _instance.Start(param);
+        }
+
+        private void Initialize()
+        {
             Status = ManagedThreadStatus.Ready;
             _idleLifeCycles = StartIdleLifeCycles;
-            _instance.Start(param);
         }
 
         public void Wait(object queuelock)
@@ -54,14 +58,20 @@ namespace GTPool
 
             if (withWait)
             {
-                Monitor.Wait(queuelock);
-                _idleLifeCycles = StartIdleLifeCycles;
+                lock (queuelock)
+                {
+                    Monitor.Wait(queuelock);
+                    _idleLifeCycles = StartIdleLifeCycles;
+                }
             }
             else
             {
-                if (Monitor.Wait(queuelock, idleTime))
+                lock (queuelock)
                 {
-                    _idleLifeCycles = StartIdleLifeCycles;
+                    if (Monitor.Wait(queuelock, idleTime))
+                    {
+                        _idleLifeCycles = StartIdleLifeCycles;
+                    }
                 }
             }
 
@@ -79,11 +89,7 @@ namespace GTPool
 
             Status = ManagedThreadStatus.Working;
 
-            #if DEBUG
-            job.DoWork(Name);
-            #else
             job.DoWork();
-            #endif
 
             _instance.IsBackground = _defaultIsBackground;
             _instance.Priority = _defaultThreadPriority;

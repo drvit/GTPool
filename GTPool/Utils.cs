@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace GTPool
 {
@@ -13,7 +10,13 @@ namespace GTPool
         public static void Log(string message)
         {
 #if DEBUG
-            Trace.WriteLine(string.Format("------------------| {0} | {1} ", HiResDateTime.UtcNow, message));
+            var thread = Thread.CurrentThread;
+            var threadId = thread.ManagedThreadId.ToString();
+
+            Trace.WriteLine(string.Format("------------------| {0} | {1} | {2} ", 
+                HiResDateTime.UtcNow,
+                thread.Name ?? threadId.PadLeft(16 - threadId.Length, ' '),
+                message));
 #endif
         }
 

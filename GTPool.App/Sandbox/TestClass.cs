@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace GTPool.App
+namespace GTPool.App.Sandbox
 {
     internal interface IInterfaceA<T>
         where T : List<int>

@@ -6,26 +6,30 @@ using System.Text;
 
 namespace GTPool
 {
-    public class GtpException : Exception
+    public class GenericThreadPoolException : Exception
     {
-        public GtpException(GtpExceptions gtpException)
+        public GenericThreadPoolException(GenericThreadPoolExceptionType gtpException)
             : base(gtpException.ToDescription())
         {
         }
 
-        public GtpException(GtpExceptions gtpException, Exception inner)
+        public GenericThreadPoolException(GenericThreadPoolExceptionType gtpException, Exception inner)
             : base(gtpException.ToDescription(), inner)
         {
         }
     }
 
-    public enum GtpExceptions
+    public enum GenericThreadPoolExceptionType
     {
         [Description("Thread Pool already initialized in a different Mode")]
         IncompatibleGtpMode,
         [Description("Settings have been disposed or not initialized. Use Init() to initialize the configuration settings.")]
         SettingsNotInitialized,
         [Description("Instance is disposed.")]
-        InstanceIsDisposed
+        InstanceIsDisposed,
+        [Description("Work must be provided when creating a managed job.")]
+        MissingWork,
+        [Description("Job can't be null.")]
+        JobIsNull
     }
 }
