@@ -1,49 +1,33 @@
-﻿using System.Threading;
+﻿ using System.Threading;
 
 namespace GTPool
 {
     public class ManagedThread
     {
         private const int Timeout = 30000;
-        private const int MaxIdleLifeCycles = 5;
-        private const int StartIdleLifeCycles = 0;
         private readonly Thread _instance;
         private readonly bool _defaultIsBackground;
         private readonly ThreadPriority _defaultThreadPriority;
-        private int _idleLifeCycles;
 
         public ManagedThread(Thread thread)
         {
             _instance = thread;
             _defaultThreadPriority = thread.Priority;
             _defaultIsBackground = thread.IsBackground;
-
-            Status = ManagedThreadStatus.NotStarted;
         }
-
-        public ManagedThreadStatus Status { get; private set; }
 
         public void Start()
         {
-            Initialize();
             _instance.Start();
         }
 
         public void Start(object param)
         {
-            Initialize();
             _instance.Start(param);
-        }
-
-        private void Initialize()
-        {
-            Status = ManagedThreadStatus.Ready;
-            _idleLifeCycles = StartIdleLifeCycles;
         }
 
         public void Wait(object queuelock)
         {
-            _idleLifeCycles = MaxIdleLifeCycles;
             Wait(queuelock, Timeout);
         }
 
@@ -54,32 +38,20 @@ namespace GTPool
 
         public void Wait(object queuelock, int idleTime, bool withWait)
         {
-            Status = ManagedThreadStatus.Waiting;
-
             if (withWait)
             {
                 lock (queuelock)
                 {
                     Monitor.Wait(queuelock);
-                    _idleLifeCycles = StartIdleLifeCycles;
                 }
             }
             else
             {
                 lock (queuelock)
                 {
-                    if (Monitor.Wait(queuelock, idleTime))
-                    {
-                        _idleLifeCycles = StartIdleLifeCycles;
-                    }
+                    Monitor.Wait(queuelock, idleTime);
                 }
             }
-
-            _idleLifeCycles++;
-
-            Status = _idleLifeCycles <= MaxIdleLifeCycles
-                ? ManagedThreadStatus.Ready
-                : ManagedThreadStatus.Retired;
         }
 
         public void ExecuteJob(ManagedJob job)
@@ -87,23 +59,11 @@ namespace GTPool
             _instance.IsBackground = job.IsBackground;
             _instance.Priority = job.ThreadPriority;
 
-            Status = ManagedThreadStatus.Working;
-
             job.DoWork();
 
             _instance.IsBackground = _defaultIsBackground;
             _instance.Priority = _defaultThreadPriority;
 
-            Status = ManagedThreadStatus.Ready;
         }
-    }
-
-    public enum ManagedThreadStatus
-    {
-        Retired,
-        Waiting,
-        Ready,
-        Working,
-        NotStarted
     }
 }

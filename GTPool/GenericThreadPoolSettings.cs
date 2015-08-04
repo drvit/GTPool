@@ -14,17 +14,25 @@ namespace GTPool
             : this(DefaultMinThreads, DefaultMaxThreads, DefaultIdleTime)
         { }
 
-        public GenericThreadPoolSettings(int numberOfThreads, int idleTime)
-            : this(DefaultMinThreads, numberOfThreads, idleTime)
+        public GenericThreadPoolSettings(int numberOfThreads)
+            : this(new GtpSync(), DefaultMinThreads, numberOfThreads, MaxIdleTime)
         { }
 
         public GenericThreadPoolSettings(int minThreads, int maxThreads, int idleTime)
+            : this (new GtpAsync(), minThreads, maxThreads, idleTime)
+        { }
+
+        private GenericThreadPoolSettings(GenericThreadPoolMode gtpMode, int minThreads, int maxThreads, int idleTime)
         {
             MaxThreads = Math.Min(Math.Max(DefaultMinThreads, maxThreads), DefaultMaxThreads);
             MinThreads = Math.Max(Math.Min(DefaultMaxThreads, minThreads), DefaultMinThreads);
             MinThreads = Math.Min(MinThreads, MaxThreads);
 
-            IdleTime = Math.Min(Math.Max(MinIdleTime, idleTime), MaxIdleTime);
+            if (!gtpMode.WithWait)
+            {
+                MinThreads++;
+                IdleTime = Math.Min(Math.Max(MinIdleTime, idleTime), MaxIdleTime);
+            }
         }
 
         public int MinThreads { get; private set; }

@@ -42,6 +42,8 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="CalculateFibonacci.cs" />
+    <Compile Include="Fibonacci.cs" />
     <Compile Include="ThreadExercises\Exercise11.cs" />
     <Compile Include="ThreadExercises\Exercise6.cs" />
     <Compile Include="Program.cs" />
@@ -57,6 +59,7 @@
     <Compile Include="ThreadExercises\Exercise8.cs" />
     <Compile Include="ThreadExercises\Exercise9.cs" />
     <Compile Include="Sandbox\ThreadUtil.cs" />
+    <Compile Include="ThreadExercises\RunExercises.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="App.config" />

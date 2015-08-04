@@ -232,7 +232,7 @@ namespace GTPool
             }
 
             Status = WorkStatus.Finished;
-            Utils.Log(string.Format("Thread Finished Working"));
+            Utils.Log("Thread Finished Working");
         }
     }
 
