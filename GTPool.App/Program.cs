@@ -10,18 +10,27 @@ namespace GTPool.App
         {
             if (args != null && (args.Length > 0 && args[0].Equals("/F")))
             {
-                var numberOfThreads = 5;
-
+                var numberOfThreads = 10;
                 if (args.Length >= 2)
                     int.TryParse(args[1], out numberOfThreads);
 
-                CalculateFibonacci.Run(numberOfThreads);
+                var fibonacciCalculations = 10;
+                if (args.Length >= 3)
+                    int.TryParse(args[2], out fibonacciCalculations);
+
+                var fibonacciSeed = 35;
+                if (args.Length >= 4)
+                    int.TryParse(args[3], out fibonacciSeed);
+
+                CalculateFibonacci.Run(numberOfThreads, fibonacciCalculations, fibonacciSeed);
             }
 
             if (args != null && (args.Length > 0 && args[0].Equals("/E")))
             {
                 RunExercises.WhatExercise();
             }
+
+            Utils.LoggerWaitToFinish();
         }
     }
 }

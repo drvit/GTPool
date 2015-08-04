@@ -48,6 +48,8 @@ namespace GTPool
                     Thread.Sleep(1);
                 }
             }
+
+            Thread.Sleep(3000);
         }
 
         private static void AddLogMessage(string logMessage)

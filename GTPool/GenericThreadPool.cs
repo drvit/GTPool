@@ -111,10 +111,10 @@ namespace GTPool
                 Utils.Log("###############################################");
                 Utils.Log("Generic Thread Pool Initialization");
 
+                _current.LoadThreadQueue();
+
                 if (!_current.GtpMode.WithWait)
                     _current.CreateMonitor();
-
-                _current.LoadThreadQueue();
             }
 
             return _current;
@@ -172,13 +172,12 @@ namespace GTPool
 
             if (_threads.Count < numberOfThreads)
             {
-                Utils.Log(string.Format("====== Attempt to create {0} threads ======", numberOfThreads));
+                Utils.Log(string.Format("====== Attempting to create {0} threads ======", numberOfThreads));
 
                 while (true)
                 {
                     if ((JobsCount == 0 && !Waiting) || (_threads.Count == numberOfThreads))
                     {
-                        Utils.Log("~~~~~~ Stop Thread Creation ~~~~~~");
                         break;
                     }
 
@@ -609,7 +608,7 @@ namespace GTPool
 
         private void InternalDispose()
         {
-            Utils.Log("Disposing...");
+            Utils.Log("...... Disposing ......");
 
             Waiting = false;
             DisposingThreads = true;
@@ -636,9 +635,7 @@ namespace GTPool
             _threads = null;
 
             Utils.Log(string.Format("Generic Thread Pool Disposed - {0} Threads used; {1} Jobs processed", _threadId, _totalJobsAdded));
-            Utils.LoggerWaitToFinish();
-
-            Thread.Sleep(2000);
+            Utils.Log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         }
 
         #endregion

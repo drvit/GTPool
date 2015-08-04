@@ -10,10 +10,8 @@ namespace GTPool.App
 {
     public class CalculateFibonacci
     {
-        public static void Run(int numberOfThreads)
+        public static void Run(int numberOfThreads, int fibonacciCalculations, int fibonacciSeed)
         {
-            const int fibonacciCalculations = 10;
-
             // One event is used for each Fibonacci object
             var doneEvents = new ManualResetEvent[fibonacciCalculations];
             var fibArray = new Fibonacci[fibonacciCalculations];
@@ -21,12 +19,12 @@ namespace GTPool.App
             // Configure and launch threads using ThreadPool:
             Console.WriteLine("launching {0} tasks...", fibonacciCalculations);
 
-            GTP.Init<GtpAsync>(15, numberOfThreads, 500);
+            GTP.Init<GtpAsync>(5, numberOfThreads, 500);
 
             for (var i = 0; i < fibonacciCalculations; i++)
             {
                 doneEvents[i] = new ManualResetEvent(false);
-                var f = new Fibonacci(i + 38, doneEvents[i]);
+                var f = new Fibonacci(i + fibonacciSeed, doneEvents[i]);
                 fibArray[i] = f;
                 GTP.AddJob(new ManagedAsyncJob((Action<object>) f.ThreadPoolCallback, new object[] { i }));
             }

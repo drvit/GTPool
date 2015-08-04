@@ -18,6 +18,17 @@ namespace GTPool.Tests
             Utils.Log(string.Format("Test: {0}", memberName));
         }
 
+        [ClassInitialize]
+        public void Initialize()
+        {
+        }
+
+        [ClassCleanup]
+        public void CleanUp()
+        {
+            Utils.LoggerWaitToFinish();
+        }
+
         [TestClass]
         public class StaticInstance
         {
@@ -646,6 +657,8 @@ namespace GTPool.Tests
             [TestCategory("GenericThreadPool")]
             public void added_jobs_callbacks_exception_is_handled_by_onerror_calback()
             {
+                LogTestRunning();
+
                 var onErrorWasExecuted = true;
                 const string exceptionMessge = "Exception from jobs_callbacks_exception_is_handled_by_onerror_calback";
 
