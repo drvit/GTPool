@@ -39,7 +39,9 @@ namespace GTPool
         private readonly Queue<ManagedJob> _queueNormal = new Queue<ManagedJob>();
         private readonly Queue<ManagedJob> _queueBelowNormal = new Queue<ManagedJob>();
         private readonly Queue<ManagedJob> _queueLowest = new Queue<ManagedJob>();
-        private HashSet<int> _ignoredJobs = new HashSet<int>();
+        private HashSet<int> _ignoredJobs;
+        private HashSet<string> _threadsUsed;
+        private HashSet<int> _jobsProcessed;
         private int _threadId;
         private int _monitorFailureCount;
         private int _jobsCount;
@@ -47,6 +49,7 @@ namespace GTPool
         private bool _disposingThreads;
         private int _waitingThreadsCount;
         private bool _gtpMonitorWaiting;
+        private int _totalThreadsCreated;
         private int _totalJobsAdded;
 
         #endregion
@@ -64,6 +67,11 @@ namespace GTPool
         public static GenericThreadPool Current { get { return _current; } }
         public GenericThreadPoolSettings Settings { get; private set; }
         public GenericThreadPoolMode GtpMode { get; private set; }
+
+        public static int TotalThreadsCreated { get { return _current._totalThreadsCreated; } }
+        public static int TotalThreadsUsed { get { return _current._threadsUsed.Count(); } }
+        public static int TotalJobsAdded { get { return _current._totalJobsAdded; } }
+        public static int TotalJobsProcessed { get { return _current._jobsProcessed.Count(); } }
 
         #endregion
 
@@ -131,7 +139,8 @@ namespace GTPool
                 _current.Waiting = true;
                 _current._ignoredJobs = new HashSet<int>();
                 _current._threadId = 0;
-                _current._totalJobsAdded = 0;
+
+                ResetTotals();
 
                 _current.GtpMode = new TMode
                 {
@@ -155,6 +164,17 @@ namespace GTPool
             }
 
             return false;
+        }
+
+        public static void ResetTotals()
+        {
+            lock (_current._variableLocker)
+            {
+                _current._totalThreadsCreated = 0;
+                _current._threadsUsed = new HashSet<string>();
+                _current._totalJobsAdded = 0;
+                _current._jobsProcessed = new HashSet<int>();
+            }
         }
 
         #endregion
@@ -191,6 +211,7 @@ namespace GTPool
                     }));
 
                     _threads[threadName].Start();
+                    _totalThreadsCreated++;
 
                     Utils.Log(string.Format("<<<<< Thread {0} created >>>>>>", threadName));
                 }
@@ -207,6 +228,14 @@ namespace GTPool
 
                 if (job != null)
                 {
+                    lock (_variableLocker)
+                    {
+                        if (!_threadsUsed.Contains(tname))
+                            _threadsUsed.Add(tname);
+
+                        if (!_jobsProcessed.Contains(job.JobId))
+                            _jobsProcessed.Add(job.JobId);
+                    }
                     _threads[tname].ExecuteJob(job);
                 }
                 else
@@ -279,13 +308,13 @@ namespace GTPool
 
         private void EnqueueJob(Queue<ManagedJob> queue, ManagedJob job)
         {
-            _totalJobsAdded++;
             CheckGtpMonitorIsRunning();
 
             lock (_queueLocker)
             {
                 lock (_variableLocker)
                 {
+                    _totalJobsAdded++;
                     _jobsCount++;
                 }
 
@@ -629,13 +658,17 @@ namespace GTPool
 
             GtpMode.InvokeDisposeCallback();
 
+            Utils.Log("Generic Thread Pool Disposed");
+            Utils.Log(string.Format("Summary: {0} Threads Created; {1} Threads Consummed; {2} Jobs Added; {3} Jobs Processed;", 
+                TotalThreadsCreated, TotalThreadsUsed, TotalJobsAdded, TotalJobsProcessed));
+            Utils.Log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+
             Settings = null;
             GtpMode = null;
             _ignoredJobs = null;
+            _threadsUsed = null;
+            _jobsProcessed = null;
             _threads = null;
-
-            Utils.Log(string.Format("Generic Thread Pool Disposed - {0} Threads used; {1} Jobs processed", _threadId, _totalJobsAdded));
-            Utils.Log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         }
 
         #endregion

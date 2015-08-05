@@ -26,7 +26,7 @@ namespace GTPool.Tests
         [ClassCleanup]
         public void CleanUp()
         {
-            Utils.LoggerWaitToFinish();
+            Utils.WaitLoggingToFinish();
         }
 
         [TestClass]

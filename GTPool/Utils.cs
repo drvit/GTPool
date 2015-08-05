@@ -16,40 +16,46 @@ namespace GTPool
 
         public static void Log(string message)
         {
-            var thread = Thread.CurrentThread;
-            var threadId = thread.ManagedThreadId.ToString();
-            var logMessage = string.Format("------------------| {0} | {1} | {2} ",
-                HiResDateTime.UtcNow,
-                thread.Name ?? threadId.PadLeft(16 - threadId.Length, ' '),
-                message);
+            if (!_stopLogger)
+            {
+                var thread = Thread.CurrentThread;
+                var threadId = thread.ManagedThreadId.ToString();
+                var logMessage = string.Format("------------------| {0} | {1} | {2} ",
+                    HiResDateTime.UtcNow,
+                    thread.Name ?? threadId.PadLeft(16 - threadId.Length, ' '),
+                    message);
 
 #if DEBUG
             Trace.WriteLine(logMessage);
 #else
-            AddLogMessage(logMessage);
-            StartLogger();
+                AddLogMessage(logMessage);
+                StartLogger();
 #endif
+            }
         }
 
-        public static void LoggerStop()
+        public static void StopLogging()
         {
             _stopLogger = true;
         }
 
-        public static void LoggerWaitToFinish()
+        public static void WaitLoggingToFinish()
         {
-            while (true)
+            if (!_stopLogger)
             {
-                lock (_locker)
+                while (true)
                 {
-                    if (!_logMessageQueue.Any())
-                        break;
+                    lock (_locker)
+                    {
+                        if (!_logMessageQueue.Any())
+                            break;
 
-                    Thread.Sleep(1);
+                        Thread.Sleep(1);
+                    }
                 }
-            }
 
-            Thread.Sleep(3000);
+                Thread.Sleep(3000);
+            }
         }
 
         private static void AddLogMessage(string logMessage)
