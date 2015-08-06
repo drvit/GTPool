@@ -5,16 +5,21 @@ using System.Linq;
 using System.Security.Cryptography.X509Certificates;
 using GTPool.App.ThreadExercises;
 using GTPool.Sandbox;
+using GTP = GTPool.GenericThreadPool;
 
 namespace GTPool.App
 {
     class Program
     {
+        static int _minThreads = 2;
+        static int _maxThreads = 2;
+        static int _idleTime = 100;
+        
         private static void Main(string[] args)
         {
             if (args.Length <= 0)
             {
-                Console.Write("What Program? (/FGTP | /BM | /EX) [/args]: ");
+                Console.Write("What Program? (/FGTP | /FDNTP | /BM | /EX) [/args]: ");
                 var pg = Console.ReadLine();
 
                 if (pg != null && 
@@ -24,11 +29,30 @@ namespace GTPool.App
                 }
             }
 
+            ApplicationStart(args);
+
             if (args.Length > 0)
             {
+                var fibonacciCalculations = 10;
+                var fibonacciSeed = 30;
+
+                TryGetIntArg(args, "FC", ref fibonacciCalculations);
+                TryGetIntArg(args, "FS", ref fibonacciSeed);
+
                 if (args[0].Equals("/FGTP"))
                 {
-                    CalculateFibonacciUsingGtp(args.Where(x => !x.StartsWith("/FGTP")).ToList());
+                    var s = Stopwatch.StartNew();
+                    CalculateFibonacciGtp.Run(fibonacciCalculations, fibonacciSeed);
+                    s.Stop();
+                    Console.WriteLine(s.ElapsedMilliseconds);
+                }
+
+                if (args[0].Equals("/FDNTP"))
+                {
+                    var s = Stopwatch.StartNew();
+                    CalculateFibonacciDnTp.Run(fibonacciCalculations, fibonacciSeed);
+                    s.Stop();
+                    Console.WriteLine(s.ElapsedMilliseconds);
                 }
 
                 if (args.Length > 0 && args[0].Equals("/EX"))
@@ -38,29 +62,31 @@ namespace GTPool.App
 
                 if (args.Length > 0 && args[0].Equals("/BM"))
                 {
-                    //Utils.StopLogging();
-
+                    Utils.Log("=================== Benchmark Starting ===================", true);
+                    
                     var bmIterations = 5;
-                    var targetName = string.Empty;
                     TryGetIntArg(args, "BMI", ref bmIterations);
 
-                    Action<IList<string>> target = null;
-
-                    if (args.Contains("/FGTP"))
+                    var targets = new Dictionary<string, Action<int, int>>
                     {
-                        targetName = "CalculateFibonacciUsingGtp";
-                        target = CalculateFibonacciUsingGtp;
+                        {"Generic Thread Pool", CalculateFibonacciGtp.Run},
+                        {".Net Thread Pool", CalculateFibonacciDnTp.Run}
+                    };
+
+                    Utils.Log(string.Format("/BM /BMI{0} /FC{1} /FS{2} /TI{3} /TA{4} /TT{5}",
+                        bmIterations, fibonacciCalculations, fibonacciSeed, _minThreads, _maxThreads, _idleTime), true);
+
+                    foreach(var tgt in targets)
+                    {
+                        Utils.Log(string.Format(tgt.Key), true);
+                        Benchmarck(bmIterations, tgt.Value, fibonacciCalculations, fibonacciSeed);
                     }
 
-                    if (target != null)
-                    {
-                        Console.WriteLine("---Benchmarking {0}", targetName);
-                        Benchmarck(bmIterations, target, args);
-                    }
+                    Utils.Log("--- Finished", true);
                 }
-
-                Utils.WaitLoggingToFinish();
             }
+
+            ApplicationEnd();
         }
 
         private static void TryGetIntArg(IEnumerable<string> args, string argName, ref int value)
@@ -79,25 +105,34 @@ namespace GTPool.App
             }
         }
 
-        private static void Benchmarck(int bmIterations, Action<IList<string>> target, IList<string> args)
+        private static void Benchmarck(int bmIterations, Action<int, int> target, 
+            int fibonacciCalculations, int fibonacciSeed)
         {
-            Utils.Log("=================== Benchmark Starting ===================");
             var s1 = Stopwatch.StartNew();
             for (var i = 0; i < bmIterations; i++)
             {
-                target.Invoke(args);
+                var si = Stopwatch.StartNew();
+                target.Invoke(fibonacciCalculations, fibonacciSeed);
+                si.Stop();
+                Console.WriteLine("Time: " + si.ElapsedMilliseconds);
             }
             s1.Stop();
             var s2 = Stopwatch.StartNew();
             for (var i = 0; i < bmIterations; i++)
             {
-                target.Invoke(args);
+                var si = Stopwatch.StartNew();
+                target.Invoke(fibonacciCalculations, fibonacciSeed);
+                si.Stop();
+                Console.WriteLine("Time: " + si.ElapsedMilliseconds);
             }
             s2.Stop();
             var s3 = Stopwatch.StartNew();
             for (var i = 0; i < bmIterations; i++)
             {
-                target.Invoke(args);
+                var si = Stopwatch.StartNew();
+                target.Invoke(fibonacciCalculations, fibonacciSeed);
+                si.Stop();
+                Console.WriteLine("Time: " + si.ElapsedMilliseconds);
             }
             s3.Stop();
 
@@ -106,25 +141,30 @@ namespace GTPool.App
                 s2.ElapsedMilliseconds,
                 s3.ElapsedMilliseconds);
 
-            Utils.Log(summary);
+            Utils.Log(summary, true);
 
             Console.WriteLine(summary);
         }
 
-        // /FGTP /F15 /S35 /TI2 /TA5
-        private static void CalculateFibonacciUsingGtp(IList<string> args)
+        private static void ApplicationStart(string[] args)
         {
-            var minThreads = 2;
-            var maxThreads = 2;
-            var fibonacciCalculations = 10;
-            var fibonacciSeed = 30;
+            Utils.StopLogging();
 
-            TryGetIntArg(args, "TI", ref minThreads);
-            TryGetIntArg(args, "TA", ref maxThreads);
-            TryGetIntArg(args, "F", ref fibonacciCalculations);
-            TryGetIntArg(args, "S", ref fibonacciSeed);
+            if (args.Length > 0)
+            {
+                TryGetIntArg(args, "TI", ref _minThreads);
+                TryGetIntArg(args, "TA", ref _maxThreads);
+                TryGetIntArg(args, "TT", ref _idleTime);
 
-            CalculateFibonacci.Run(minThreads, maxThreads, fibonacciCalculations, fibonacciSeed);
+                GTP.Init<GtpAsync>(_minThreads, _maxThreads, _idleTime);
+            }
         }
+
+        private static void ApplicationEnd()
+        {
+            GTP.End(true);
+            Utils.WaitLoggingToFinish();
+        }
+
     }
 }

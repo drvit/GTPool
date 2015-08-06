@@ -15,7 +15,7 @@ namespace GTPool
         { }
 
         public GenericThreadPoolSettings(int numberOfThreads)
-            : this(new GtpSync(), DefaultMinThreads, numberOfThreads, MaxIdleTime)
+            : this(new GtpSync(), numberOfThreads, numberOfThreads, MaxIdleTime)
         { }
 
         public GenericThreadPoolSettings(int minThreads, int maxThreads, int idleTime)

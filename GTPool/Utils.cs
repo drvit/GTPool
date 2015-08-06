@@ -18,6 +18,14 @@ namespace GTPool
         {
             if (!_stopLogger)
             {
+                Log(message, false);
+            }
+        }
+
+        public static void Log(string message, bool forceLogging)
+        {
+            if (!_stopLogger || forceLogging)
+            {
                 var thread = Thread.CurrentThread;
                 var threadId = thread.ManagedThreadId.ToString();
                 var logMessage = string.Format("------------------| {0} | {1} | {2} ",
@@ -34,6 +42,11 @@ namespace GTPool
             }
         }
 
+        public static void StartLogging()
+        {
+            _stopLogger = false;
+        }
+
         public static void StopLogging()
         {
             _stopLogger = true;
@@ -41,29 +54,29 @@ namespace GTPool
 
         public static void WaitLoggingToFinish()
         {
-            if (!_stopLogger)
+            var any = false;
+            while (true)
             {
-                while (true)
+                lock (_locker)
                 {
-                    lock (_locker)
+                    if (!_logMessageQueue.Any())
                     {
-                        if (!_logMessageQueue.Any())
-                            break;
-
-                        Thread.Sleep(1);
+                        break;
                     }
-                }
 
-                Thread.Sleep(3000);
+                    any = true;
+                    Thread.Sleep(1);
+                }
             }
+
+            if (any)
+                Thread.Sleep(3000);
         }
 
         private static void AddLogMessage(string logMessage)
         {
             new Thread((() =>
             {
-                _stopLogger = false;
-
                 lock (_locker)
                 {
                     _logMessageQueue.Enqueue(logMessage);
@@ -110,7 +123,7 @@ namespace GTPool
         private static void LogMessages()
         {
             const string dummy = "!##^log?msg~##!";
-            while (!_stopLogger)
+            while (true)
             {
                 var logmsg = dummy;
                 lock (_locker)

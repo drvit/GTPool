@@ -42,8 +42,9 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CalculateFibonacci.cs" />
+    <Compile Include="CalculateFibonacciGtp.cs" />
     <Compile Include="Fibonacci.cs" />
+    <Compile Include="CalculateFibonacciDnTp.cs" />
     <Compile Include="ThreadExercises\Exercise11.cs" />
     <Compile Include="ThreadExercises\Exercise6.cs" />
     <Compile Include="Program.cs" />
