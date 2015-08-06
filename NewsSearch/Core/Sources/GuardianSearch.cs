@@ -4,7 +4,7 @@ using AutoMapper;
 
 namespace NewsSearch.Core.Sources
 {
-    public class GuardianSearch : BaseSearch<GuardianResult>
+    public class GuardianSearch : BaseSearch
     {
         // TODO: create a factory to create the Search Entities
         public GuardianSearch()
@@ -29,6 +29,12 @@ namespace NewsSearch.Core.Sources
                 StringComparer.InvariantCultureIgnoreCase);
 
             Mapper.Map(response, this);
+        }
+
+        public new IEnumerable<GuardianResult> Results
+        {
+            get { return (IEnumerable<GuardianResult>) base.Results; }
+            set { base.Results = value; }
         }
     }
 

@@ -4,7 +4,7 @@ using AutoMapper;
 
 namespace NewsSearch.Core.Sources
 {
-    public class SocialMentionSearch : BaseSearch<SocialMentionResult>
+    public class SocialMentionSearch : BaseSearch
     {
         // TODO: create a factory to create the Search Entities
         public SocialMentionSearch()
@@ -28,6 +28,12 @@ namespace NewsSearch.Core.Sources
             var response = new Dictionary<string, object>(ApiResponse, StringComparer.InvariantCultureIgnoreCase);
 
             Mapper.Map(response, this);
+        }
+
+        public new IEnumerable<SocialMentionResult> Results
+        {
+            get { return (IEnumerable<SocialMentionResult>)base.Results; }
+            set { base.Results = value; }
         }
     }
 

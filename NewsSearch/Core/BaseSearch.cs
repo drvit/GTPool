@@ -3,8 +3,7 @@ using System.Collections.Generic;
 
 namespace NewsSearch.Core
 {
-    public abstract class BaseSearch<TResult> : ISearch
-        where TResult : BaseResult
+    public abstract class BaseSearch : ISearch
     {
         protected BaseSearch(bool lazyLoading, string apiBaseAddress, string apiQueryString, string sourceName)
         {
@@ -136,8 +135,8 @@ namespace NewsSearch.Core
             set { _orderBy = value; }
         }
 
-        private IEnumerable<TResult> _results;
-        public virtual IEnumerable<TResult> Results
+        private IEnumerable<IResult> _results;
+        public virtual IEnumerable<IResult> Results
         {
             get
             {

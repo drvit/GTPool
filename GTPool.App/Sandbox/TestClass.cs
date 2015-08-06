@@ -36,16 +36,16 @@ namespace GTPool.App.Sandbox
 
         Main()
         {
-            var guardianSearch = new GuardianSearch();
-            var socialMentionSearch = new SocialMentionSearch();
+            //var guardianSearch = new GuardianSearch();
+            //var socialMentionSearch = new SocialMentionSearch();
 
-            var test = new List<Tuple<ISearch, IEnumerable<BaseResult>>>
+            var test = new List<ISearch>
             {
-                new Tuple<ISearch, IEnumerable<BaseResult>>(guardianSearch, guardianSearch.Results),
-                new Tuple<ISearch, IEnumerable<BaseResult>>(socialMentionSearch, socialMentionSearch.Results)
+                new GuardianSearch(),
+                new SocialMentionSearch()
             };
 
-
+            
         }
     }
     
@@ -67,20 +67,20 @@ namespace GTPool.App.Sandbox
         string Query { get; set; }
         string ApiUrl { get; set; }
         Dictionary<string, object> ApiResponse { get; set; }
+        IEnumerable<IResult> Results { get; set; }
     }
 
-    abstract class BaseSearch<TResult> : ISearch
-        where TResult : BaseResult
+    abstract class BaseSearch : ISearch
     {
         public string SourceName { get; set; }
         public string Query { get; set; }
         public string ApiUrl { get; set; }
         public Dictionary<string, object> ApiResponse { get; set; }
-        public IEnumerable<TResult> Results { get; set; }
+        public IEnumerable<IResult> Results { get; set; }
         protected abstract void LoadResponse();
     }
 
-    class GuardianSearch : BaseSearch<GuardianResult>
+    class GuardianSearch : BaseSearch
     {
         protected override void LoadResponse()
         {
@@ -91,7 +91,7 @@ namespace GTPool.App.Sandbox
     {
     }
 
-    class SocialMentionSearch : BaseSearch<SocialMentionResult>
+    class SocialMentionSearch : BaseSearch
     {
         protected override void LoadResponse()
         {

@@ -3,10 +3,12 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using GTPool;
 using NewsSearch.Core;
 using NewsSearch.Core.Services;
 using NewsSearch.Core.Sources;
 using NewsSearch.Models;
+using GTP = GTPool.GenericThreadPool;
 
 namespace NewsSearch.Controllers
 {
@@ -21,18 +23,38 @@ namespace NewsSearch.Controllers
         [HttpPost]
         public ActionResult Index(SearchViewModel model)
         {
-            var searchResults = new List<Tuple<ISearch, IEnumerable<BaseResult>>>();
-            var guardian = new GuardianSearch();
-            var socialMention = new SocialMentionSearch();
-            var youtube = new YouTubeSearch();
+            var searchResults = new List<Tuple<ISearch, IEnumerable<IResult>>>();
 
-            ApiHelper.Execute(guardian, model.SearchQuery);
-            ApiHelper.Execute(socialMention, model.SearchQuery);
-            ApiHelper.Execute(youtube, model.SearchQuery);
+            var sources = new List<ISearch>
+            {
+                new GuardianSearch(),
+                new SocialMentionSearch(),
+                new YouTubeSearch()
+            };
 
-            searchResults.Add(new Tuple<ISearch, IEnumerable<BaseResult>>(guardian, guardian.Results));
-            searchResults.Add(new Tuple<ISearch, IEnumerable<BaseResult>>(socialMention, socialMention.Results));
-            searchResults.Add(new Tuple<ISearch, IEnumerable<BaseResult>>(youtube, youtube.Results));
+            using (var gtp = GTP.Init<GtpSync>(3))
+            {
+                foreach (var src in sources)
+                {
+                    var src1 = src;
+
+                    gtp.AddJob(new ManagedSyncJob(
+                        (Action<ISearch, string>)ApiHelper.Execute, new object[] { src1, model.SearchQuery },
+                        (Action<ISearch>)(source =>
+                        {
+                            searchResults.Add(new Tuple<ISearch, IEnumerable<IResult>>(source, source.Results));
+                        }), new object[] { src1 },
+                        (ex =>
+                        {
+                            src1.ApiResponse = new Dictionary<string, object>
+                            {
+                                {"error", ex}
+                            };
+
+                            searchResults.Add(new Tuple<ISearch, IEnumerable<IResult>>(src1, src1.Results));
+                        })));
+                }
+            }
 
             if (ModelState.IsValid)
             {

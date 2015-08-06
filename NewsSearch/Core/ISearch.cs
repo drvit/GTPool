@@ -9,5 +9,6 @@ namespace NewsSearch.Core
         string ApiQueryString { get; }
         string Query { get; set; }
         Dictionary<string, object> ApiResponse { get; set; }
+        IEnumerable<IResult> Results { get; set; }
     }
 }

@@ -6,7 +6,7 @@ using AutoMapper;
 
 namespace NewsSearch.Core.Sources
 {
-    public class YouTubeSearch : BaseSearch<YouTubeResult>
+    public class YouTubeSearch : BaseSearch
     {
         public YouTubeSearch()
             : base(true,
@@ -28,6 +28,12 @@ namespace NewsSearch.Core.Sources
             var response = new Dictionary<string, object>(ApiResponse, StringComparer.InvariantCultureIgnoreCase);
 
             Mapper.Map(response, this);
+        }
+
+        public new IEnumerable<YouTubeResult> Results
+        {
+            get { return (IEnumerable<YouTubeResult>)base.Results; }
+            set { base.Results = value; }
         }
     }
 
