@@ -240,22 +240,19 @@ namespace GTPool
                 }
                 else
                 {
-                    //if (_threads.Count > Settings.MinThreads)
-                    //{
-                        lock (_variableLocker)
-                        {
-                            _waitingThreadsCount++;
-                        }
+                    lock (_variableLocker)
+                    {
+                        _waitingThreadsCount++;
+                    }
 
-                        Utils.Log("Thread going to sleep");
-                        _threads[CurrentThreadName].Wait(_queueLocker, Settings.IdleTime, Waiting);
-                        Utils.Log("Thread woke up");
+                    Utils.Log("Thread going to sleep");
+                    _threads[CurrentThreadName].Wait(_queueLocker, Settings.IdleTime, Waiting);
+                    Utils.Log("Thread woke up");
 
-                        lock (_variableLocker)
-                        {
-                            _waitingThreadsCount--;
-                        }
-                    //}
+                    lock (_variableLocker)
+                    {
+                        _waitingThreadsCount--;
+                    }
 
                     if (JobsCount == 0 && (DisposingThreads || 
                         (!GtpMode.WithWait && _threads.Count > Settings.MinThreads)))
@@ -625,7 +622,7 @@ namespace GTPool
 
         public static void End(bool silently)
         {
-            if (!silently && !_current.GtpMode.WithWait)
+            if (!silently && _current.GtpMode.WithWait)
                 throw new GenericThreadPoolException(
                     GenericThreadPoolExceptionType.IncompatibleGtpMode);
 

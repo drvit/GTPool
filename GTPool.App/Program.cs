@@ -69,8 +69,9 @@ namespace GTPool.App
 
                     var targets = new Dictionary<string, Action<int, int>>
                     {
-                        {"Generic Thread Pool", CalculateFibonacciGtp.Run},
-                        {".Net Thread Pool", CalculateFibonacciDnTp.Run}
+                        {"Single Thread", CalculateFibonacciSt.Run},
+                        {".Net Thread Pool", CalculateFibonacciDnTp.Run},
+                        {"Generic Thread Pool", CalculateFibonacciGtp.Run}
                     };
 
                     Utils.Log(string.Format("/BM /BMI{0} /FC{1} /FS{2} /TI{3} /TA{4} /TT{5}",

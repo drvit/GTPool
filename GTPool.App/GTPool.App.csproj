@@ -43,6 +43,7 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="CalculateFibonacciGtp.cs" />
+    <Compile Include="CalculateFibonacciSt.cs" />
     <Compile Include="Fibonacci.cs" />
     <Compile Include="CalculateFibonacciDnTp.cs" />
     <Compile Include="ThreadExercises\Exercise11.cs" />

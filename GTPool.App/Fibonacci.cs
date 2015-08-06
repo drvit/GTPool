@@ -11,6 +11,12 @@ namespace GTPool.App
     {
         private readonly ManualResetEvent _doneEvent;
 
+        public Fibonacci(int n)
+        {
+            _n = n;
+            _doneEvent = null;
+        }
+
         public Fibonacci(int n, ManualResetEvent doneEvent)
         {
             _n = n;
@@ -24,7 +30,9 @@ namespace GTPool.App
             Console.WriteLine("thread {0} started...", threadIndex);
             _fibOfN = Calculate(_n);
             Console.WriteLine("thread {0} result calculated...", threadIndex);
-            _doneEvent.Set();
+
+            if (_doneEvent != null)
+                _doneEvent.Set();
         }
 
         // Recursive method that calculates the Nth Fibonacci number.
