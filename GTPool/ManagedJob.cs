@@ -21,12 +21,12 @@ namespace GTPool
         {
         }
 
-        public ManagedAsyncJob(Delegate work, object[] parameters, Action<Exception> onError)
+        public ManagedAsyncJob(Delegate work, object[] parameters, Action<GenericThreadPoolException> onError)
             : base(new GtpAsync(), work, parameters, onError)
         {
         }
 
-        public ManagedAsyncJob(Delegate work, object[] parameters, Action<Exception> onError, ThreadPriority threadPriority,
+        public ManagedAsyncJob(Delegate work, object[] parameters, Action<GenericThreadPoolException> onError, ThreadPriority threadPriority,
             bool isBackground)
             : base(new GtpAsync(), work, parameters, onError, threadPriority, isBackground)
         {
@@ -45,13 +45,13 @@ namespace GTPool
         }
 
         public ManagedAsyncJob(Delegate work, object[] parameters, Delegate callback,
-            object[] callbackParameters, Action<Exception> onerror)
+            object[] callbackParameters, Action<GenericThreadPoolException> onerror)
             : base(new GtpAsync(), work, parameters, callback, callbackParameters, onerror)
         {
         }
 
         public ManagedAsyncJob(Delegate work, object[] parameters, Delegate callback,
-            object[] callbackParameters, Action<Exception> onerror, ThreadPriority threadPriority, bool isBackground)
+            object[] callbackParameters, Action<GenericThreadPoolException> onerror, ThreadPriority threadPriority, bool isBackground)
             : base(new GtpAsync(), work, parameters, callback, callbackParameters, onerror, threadPriority, isBackground)
         {
         }
@@ -75,12 +75,12 @@ namespace GTPool
         {
         }
 
-        public ManagedSyncJob(Delegate work, object[] parameters, Action<Exception> onError)
+        public ManagedSyncJob(Delegate work, object[] parameters, Action<GenericThreadPoolException> onError)
             : base(new GtpSync(), work, parameters, onError)
         {
         }
 
-        public ManagedSyncJob(Delegate work, object[] parameters, Action<Exception> onError, ThreadPriority threadPriority,
+        public ManagedSyncJob(Delegate work, object[] parameters, Action<GenericThreadPoolException> onError, ThreadPriority threadPriority,
             bool isBackground)
             : base(new GtpSync(), work, parameters, onError, threadPriority, isBackground)
         {
@@ -99,13 +99,13 @@ namespace GTPool
         }
 
         public ManagedSyncJob(Delegate work, object[] parameters, Delegate callback,
-            object[] callbackParameters, Action<Exception> onerror)
+            object[] callbackParameters, Action<GenericThreadPoolException> onerror)
             : base(new GtpSync(), work, parameters, callback, callbackParameters, onerror)
         {
         }
 
         public ManagedSyncJob(Delegate work, object[] parameters, Delegate callback,
-            object[] callbackParameters, Action<Exception> onerror, ThreadPriority threadPriority, bool isBackground)
+            object[] callbackParameters, Action<GenericThreadPoolException> onerror, ThreadPriority threadPriority, bool isBackground)
             : base(new GtpSync(), work, parameters, callback, callbackParameters, onerror, threadPriority, isBackground)
         {
         }
@@ -121,11 +121,11 @@ namespace GTPool
             : this(gtpMode, work, parameters, null, null, null)
         { }
 
-        protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters, Action<Exception> onError)
+        protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters, Action<GenericThreadPoolException> onError)
             : this(gtpMode, work, parameters, null, null, onError)
         { }
 
-        protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters, Action<Exception> onError, ThreadPriority threadPriority, bool isBackground)
+        protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters, Action<GenericThreadPoolException> onError, ThreadPriority threadPriority, bool isBackground)
             : this(gtpMode, work, parameters, null, null, onError, threadPriority, isBackground)
         { }
 
@@ -143,12 +143,12 @@ namespace GTPool
         { }
 
         protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters, Delegate callback, object[] callbackParameters,
-            Action<Exception> onError)
+            Action<GenericThreadPoolException> onError)
             : this(gtpMode, work, parameters, callback, callbackParameters, onError, ThreadPriority.Normal, true)
         { }
 
         protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters, Delegate callback, object[] callbackParameters,
-            Action<Exception> onError, ThreadPriority threadPriority, bool isBackground)
+            Action<GenericThreadPoolException> onError, ThreadPriority threadPriority, bool isBackground)
         {
             ThreadPriority = threadPriority;
             IsBackground = isBackground;
@@ -169,7 +169,7 @@ namespace GTPool
 
         private readonly ManagedJobDelegate _work;
         private readonly ManagedJobDelegate _callback;
-        private readonly Action<Exception> _onError;
+        private readonly Action<GenericThreadPoolException> _onError;
 
         public int JobId { get; private set; }
 
@@ -181,57 +181,70 @@ namespace GTPool
 
         public WorkStatus Status { get; private set; }
 
-        public Exception Error { get; private set; }
+        public GenericThreadPoolException Error { get; private set; }
 
         public void DoWork()
         {
             Status = WorkStatus.InProgress;
-            Utils.Log(string.Format("Thread Working"));
+            Utils.Log("Thread Working");
             
-            object result;
+            object result = null;
+
             try
             {
                 result = _work.Invoke(_onError, "Thread Work failed");
             }
+            catch (GenericThreadPoolException ex)
+            {
+                Error = ex;
+            }
             catch (Exception ex)
             {
-                Status = WorkStatus.Failed;
-                Error = ex;
-                return;
+                Error = new GenericThreadPoolException(
+                    GenericThreadPoolExceptionType.ManagedJobException, ex, _work.Parameters);
             }
 
-            if (_callback != null)
+            if (Error == null)
             {
-                if (result != null)
+                if (_callback != null)
                 {
-                    if (_callback.Parameters == null)
+                    if (result != null)
                     {
-                        _callback.Parameters = new[] {result};
+                        if (_callback.Parameters == null)
+                        {
+                            _callback.Parameters = new[] {result};
+                        }
+                        else
+                        {
+                            var cbparams = _callback.Parameters;
+
+                            Array.Resize(ref cbparams, cbparams.Length + 1);
+                            cbparams[cbparams.Length - 1] = result;
+
+                            _callback.Parameters = cbparams;
+                        }
                     }
-                    else
+
+                    try
                     {
-                        var cbparams = _callback.Parameters;
-
-                        Array.Resize(ref cbparams, cbparams.Length + 1);
-                        cbparams[cbparams.Length - 1] = result;
-
-                        _callback.Parameters = cbparams;
+                        _callback.Invoke(_onError, "Thread Work Callback failed");
                     }
-                }
-
-                try
-                {
-                    _callback.Invoke(_onError, "Thread Work Callback failed");
-                }
-                catch (Exception ex)
-                {
-                    Status = WorkStatus.Failed;
-                    Error = ex;
-                    return;
+                    catch (GenericThreadPoolException ex)
+                    {
+                        Error = ex;
+                    }
+                    catch (Exception ex)
+                    {
+                        Error = new GenericThreadPoolException(
+                            GenericThreadPoolExceptionType.ManagedJobException, ex, _callback.Parameters);
+                    }
                 }
             }
 
-            Status = WorkStatus.Finished;
+            Status = Error == null 
+                ? WorkStatus.Failed
+                : WorkStatus.Finished;
+
             Utils.Log("Thread Finished Working");
         }
     }
@@ -251,7 +264,7 @@ namespace GTPool
         internal Delegate JobDelegate { get; private set; }
         internal object[] Parameters { get; set; }
 
-        internal object Invoke(Action<Exception> onError, string errorMessage)
+        internal object Invoke(Action<GenericThreadPoolException> onError, string errorMessage)
         {
             if (JobDelegate == null)
                 return null;
@@ -262,7 +275,8 @@ namespace GTPool
             }
             catch (Exception ex)
             {
-                var targetException = ex.InnerException ?? ex;
+                var targetException = new GenericThreadPoolException(
+                    GenericThreadPoolExceptionType.ManagedJobException, ex.InnerException ?? ex, Parameters);
 
                 Utils.Log(string.Format("{0}", errorMessage));
                 Utils.Log(string.Format("Error: {0}", targetException.Message));
@@ -277,7 +291,7 @@ namespace GTPool
                     return null;
                 }
 
-                throw;
+                throw targetException;
             }
         }
     }

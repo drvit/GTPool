@@ -683,8 +683,6 @@ namespace GTPool
             Settings = null;
             GtpMode = null;
             _ignoredJobs = null;
-            _threadsUsed = null;
-            _jobsProcessed = null;
             _threads = null;
 
             Utils.Log("Generic Thread Pool Disposed");

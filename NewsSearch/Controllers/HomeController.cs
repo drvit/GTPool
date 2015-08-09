@@ -23,10 +23,9 @@ namespace NewsSearch.Controllers
         [HttpPost]
         public ActionResult Index(SearchViewModel model)
         {
-            var searchResults = new List<Tuple<ISearch, IEnumerable<IResult>>>();
-
             var sources = new List<ISearch>
             {
+                new WikipediaSearch(),
                 new GuardianSearch(),
                 new SocialMentionSearch(),
                 new YouTubeSearch()
@@ -36,29 +35,26 @@ namespace NewsSearch.Controllers
             {
                 foreach (var src in sources)
                 {
-                    var src1 = src;
-
                     gtp.AddJob(new ManagedSyncJob(
-                        (Action<ISearch, string>)ApiHelper.Execute, new object[] { src1, model.SearchQuery },
-                        (Action<ISearch>)(source =>
-                        {
-                            searchResults.Add(new Tuple<ISearch, IEnumerable<IResult>>(source, source.Results));
-                        }), new object[] { src1 },
+                        (Action<ISearch, string>)ApiHelper.Execute,
+                        new object[] { src, model.SearchQuery },
                         (ex =>
                         {
-                            src1.ApiResponse = new Dictionary<string, object>
-                            {
-                                {"error", ex}
-                            };
+                            var source = (ISearch) ex.JobParameters[0];
 
-                            searchResults.Add(new Tuple<ISearch, IEnumerable<IResult>>(src1, src1.Results));
+                            sources.First(x => x.SourceName == source.SourceName)
+                                .LoadError(new Dictionary<string, object>
+                                    (StringComparer.InvariantCultureIgnoreCase)
+                                {
+                                    {"error", ex.InnerException}
+                                });
                         })));
                 }
             }
 
             if (ModelState.IsValid)
             {
-                model.SearchResults = searchResults;
+                model.SearchResults = sources;
                 return View(model);
             }
 

@@ -5,6 +5,15 @@ body {
   height: 100%;
   overflow-y: scroll;
 }
+.topBar {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background-color: #6b6ba3;
+  z-index: 1;
+}
 .body-content {
   min-height: 100%;
   position: relative;
@@ -13,7 +22,7 @@ body {
 }
 .main-content {
   position: relative;
-  padding-bottom: 100px;
+  padding-bottom: 200px;
   min-width: 550px;
   margin: 0 50px;
 }
@@ -23,29 +32,33 @@ footer {
   margin: auto;
   position: absolute;
   bottom: 0;
-  left: 50px;
-  right: 50px;
+  left: 0;
+  right: 0;
+  background-color: #6b6ba3;
 }
 footer p {
-  border-top: 1px solid #6b6ba3;
-  margin-top: 50px;
+  /*border-top: 1px solid #dedede;*/
+  margin: 70px 50px 0 50px;
+  color: #dedede;
+  text-align: right;
 }
 .searchContainer {
   text-align: center;
-  padding: 80px 0 50px 0;
+  padding: 50px 0 50px 0;
+  /*background-color: antiquewhite;*/
 }
 .searchContainer input {
   font-size: 22px;
   padding: 4px 6px;
 }
 .searchContainer input[type=text] {
-  width: 400px;
+  width: 500px;
   border: 1px solid #6b6ba3;
 }
 .searchContainer input[type=submit] {
   background-color: #6b6ba3;
-  color: #dedede;
   border: 1px solid #6b6ba3;
+  color: #dedede;
   margin-left: 5px;
   width: 100px;
 }
@@ -96,5 +109,8 @@ footer p {
 }
 .newsResults ul .newsSubSource a:hover {
   color: #1c1c5f;
+}
+.hidden {
+  display: none;
 }
 /*# sourceMappingURL=sitebase.css.map */

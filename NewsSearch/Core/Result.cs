@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
+using System.Linq;
+using System.Web;
 
 namespace NewsSearch.Core
 {
-    public abstract class BaseResult : IResult
+    public class Result : IResult
     {
         public string Title { get; set; }
         public DateTime PublicationDate { get; set; }

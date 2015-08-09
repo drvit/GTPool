@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -13,6 +14,7 @@ namespace GTPool
         private static readonly string _fileName = string.Format(@"C:\Log\GTPool_{0}.txt", DateTime.Today.ToString("yyyy-MM-dd"));
         private static Thread _logger;
         private static bool _stopLogger;
+        private static bool _forceLogging;
 
         public static void Log(string message)
         {
@@ -24,7 +26,9 @@ namespace GTPool
 
         public static void Log(string message, bool forceLogging)
         {
-            if (!_stopLogger || forceLogging)
+            _forceLogging = forceLogging;
+
+            if (!_stopLogger || _forceLogging)
             {
                 var thread = Thread.CurrentThread;
                 var threadId = thread.ManagedThreadId.ToString();
@@ -34,11 +38,10 @@ namespace GTPool
                     message);
 
 #if DEBUG
-            Trace.WriteLine(logMessage);
-#else
+                Trace.WriteLine(logMessage);
+#endif
                 AddLogMessage(logMessage);
                 StartLogger();
-#endif
             }
         }
 
@@ -71,6 +74,9 @@ namespace GTPool
 
             if (any)
                 Thread.Sleep(3000);
+
+            _stopLogger = true;
+            _forceLogging = false;
         }
 
         private static void AddLogMessage(string logMessage)
@@ -123,7 +129,7 @@ namespace GTPool
         private static void LogMessages()
         {
             const string dummy = "!##^log?msg~##!";
-            while (true)
+            while (!_stopLogger || _forceLogging)
             {
                 var logmsg = dummy;
                 lock (_locker)

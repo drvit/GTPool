@@ -145,17 +145,16 @@
     <Compile Include="App_Start\FilterConfig.cs" />
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
+    <Compile Include="Core\Result.cs" />
     <Compile Include="Core\Services\ApiHelper.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Core\Sources\WikipediaSearch.cs" />
     <Compile Include="Core\Sources\YouTubeSearch.cs" />
+    <Compile Include="Infrastructure\Utils\DynamicUtils.cs" />
     <Compile Include="Global.asax.cs">
       <DependentUpon>Global.asax</DependentUpon>
     </Compile>
-    <Compile Include="Infrastructure\Automapper\GuardianProfile.cs" />
-    <Compile Include="Infrastructure\Automapper\InitializeProfiles.cs" />
-    <Compile Include="Infrastructure\Automapper\YouTubeProfile.cs" />
-    <Compile Include="Infrastructure\ExtensionsHelper.cs" />
-    <Compile Include="Infrastructure\Automapper\SocialMentionProfile.cs" />
+    <Compile Include="Infrastructure\Utils\ExtensionsHelper.cs" />
     <Compile Include="Core\Sources\GuardianSearch.cs" />
     <Compile Include="Core\IResult.cs" />
     <Compile Include="Core\ISearch.cs" />

@@ -8,36 +8,38 @@ namespace NewsSearch.Core.Sources
     {
         // TODO: create a factory to create the Search Entities
         public SocialMentionSearch()
-            : base(true,
-                "http://api2.socialmention.com/",
+            : base("http://api2.socialmention.com/",
                 "search?q={0}&f=json&lang=en&t=news",
                 "Social Mention")
-        {
-        }
+        { }
 
-        public SocialMentionSearch(bool lazyLoading, string apiBaseAddress, string apiQueryString, string sourceName)
-            : base(lazyLoading, apiBaseAddress, apiQueryString, sourceName)
+        public override void LoadResponse(Dictionary<string, object> apiResponse)
         {
-        }
-
-        protected override void LoadResponse()
-        {
-            if (ApiResponse == null || !ApiResponse.ContainsKey("items"))
+            if (apiResponse == null || !apiResponse.ContainsKey("items"))
                 return;
 
-            var response = new Dictionary<string, object>(ApiResponse, StringComparer.InvariantCultureIgnoreCase);
+            var response = new Dictionary<string, object>(apiResponse, StringComparer.InvariantCultureIgnoreCase);
 
-            Mapper.Map(response, this);
+            AddHeaderMappingItem("Count", SearchFields.Total, IntParseString);
+            AddHeaderMappingItem("items", SearchFields.Results, null);
+
+            AddResultMappingItem("Title", ResultFields.Title, null);
+            AddResultMappingItem("Description", ResultFields.Description, null);
+            AddResultMappingItem("timestamp", ResultFields.PublicationDate, DateTimeParseLong);
+            AddResultMappingItem("Id", ResultFields.Id, null);
+            AddResultMappingItem("link", ResultFields.WebUrl, null);
+            AddResultMappingItem("type", ResultFields.SectionName, null);
+            AddResultMappingItem("domain", ResultFields.SubSourceName, null);
+            AddResultMappingItem("favicon", ResultFields.SubSourceFavIcon, null);
+            AddResultMappingItem("domain", ResultFields.SubSourceDomain, FormatLink);
+            AddResultMappingItem("Embeded", ResultFields.Embeded, null);
+            AddResultMappingItem("Language", ResultFields.Language, null);
+            AddResultMappingItem("user", ResultFields.UserPublisher, null);
+            AddResultMappingItem("user_image", ResultFields.UserImage, null);
+            AddResultMappingItem("user_link", ResultFields.UserLink, null);
+            AddResultMappingItem("geo", ResultFields.Geolocation, null);
+
+            PopulateFields(response);
         }
-
-        public new IEnumerable<SocialMentionResult> Results
-        {
-            get { return (IEnumerable<SocialMentionResult>)base.Results; }
-            set { base.Results = value; }
-        }
-    }
-
-    public class SocialMentionResult : BaseResult
-    {
     }
 }

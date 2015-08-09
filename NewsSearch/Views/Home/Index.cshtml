@@ -4,15 +4,18 @@
     ViewBag.Title = "Home Page";
 }
 
-<div class="searchContainer">
-    @using (Html.BeginForm())
-    {
-        <fieldset>
-            @Html.TextBoxFor(m => Model.SearchQuery, "", new { @class = "searchNews" })
-            <input type="submit" value="search" />
-        </fieldset>
-    }
-</div>
+@section topcontent
+{
+    <div class="searchContainer">
+        @using (Html.BeginForm())
+        {
+            <fieldset>
+                @Html.TextBoxFor(m => Model.SearchQuery, "", new {@class = "searchNews"})
+                <input type="submit" value="search"/>
+            </fieldset>
+        }
+    </div>
+}
 
 @if (Model.SearchResults != null)
 {
@@ -20,17 +23,34 @@
         @foreach (var source in Model.SearchResults)
         {
             <ul>
-                <li class="newsSource">@source.Item1.SourceName</li>
-                @if (source.Item2 != null)
+                @if (source.Results != null)
                 {
-                    foreach (var news in source.Item2.OrderByDescending(x => x.PublicationDate))
+                    if (source.Error == null)
                     {
-                        <li class="newsHeadline">@news.PublicationDate.ToShortDateString()</li>
-                        <li class="newsTitle"><a href="@news.WebUrl" target="_blank">@news.Title</a></li>
-                        if (!string.IsNullOrEmpty(news.SubSourceName))
+                        <li class="newsSource">@source.SourceName</li>
+                        foreach (var news in source.Results.OrderByDescending(x => x.PublicationDate))
                         {
-                            <li class="newsSubSource"><a href="@news.SubSourceDomain" target="_blank">@news.SubSourceName</a></li>
+                            if (!string.IsNullOrEmpty(news.Extract))
+                            {
+                                <li>@news.Title</li>
+                                <li>@Html.Raw(@news.Extract)</li>
+                                <li><a href="@news.WebUrl" target="_blank">@news.Title</a></li>
+                                <li>@news.PublicationDate</li>
+                            }
+                            else
+                            {
+                                <li class="newsHeadline">@news.PublicationDate.ToShortDateString()</li>
+                                <li class="newsTitle"><a href="@news.WebUrl" target="_blank">@news.Title</a></li>
+                                if (!string.IsNullOrEmpty(news.SubSourceName))
+                                {
+                                    <li class="newsSubSource"><a href="@news.SubSourceDomain" target="_blank">@news.SubSourceName</a></li>
+                                }
+                            }
                         }
+                    }
+                    else
+                    {
+                        <li>@source.Error.Message</li>
                     }
                 }
             </ul>
