@@ -31,6 +31,34 @@ namespace NewsSearch.Core
         public IDictionary<string, Tuple<SearchFields, Func<string, object, object>>> HeaderMapping { get; private set; }
         public IDictionary<string, Tuple<ResultFields, Func<string, object, object>>> ResultMapping { get; private set; }
 
+        #region ISearch Properties
+
+        public string SourceName { get; private set; }
+
+        public string Status { get; set; }
+
+        public int Total { get; set; }
+
+        public int StartIndex { get; set; }
+
+        public int PageSize { get; set; }
+
+        public int CurrentPage { get; set; }
+
+        public int Pages { get; set; }
+
+        public string OrderBy { get; set; }
+
+        public IEnumerable<IResult> Results { get; set; }
+
+        public Exception Error { get; set; }
+
+        #endregion
+
+        #region Methods to Load Fields
+
+        public abstract void LoadResponse(Dictionary<string, object> response);
+
         public void AddHeaderMappingItem(string sourceField, SearchFields targetField,
             Func<string, object, object> valueFormater)
         {
@@ -44,8 +72,6 @@ namespace NewsSearch.Core
             if (!ResultMapping.ContainsKey(sourceField))
                 ResultMapping.Add(sourceField, new Tuple<ResultFields, Func<string, object, object>>(targetField, valueFormater));
         }
-
-        public abstract void LoadResponse(Dictionary<string, object> response);
 
         public void LoadError(Dictionary<string, object> error)
         {
@@ -173,28 +199,6 @@ namespace NewsSearch.Core
                 return false;
             }
         }
-        
-        #region Search Properties
-
-        public string SourceName { get; private set; }
-
-        public string Status { get; set; }
-
-        public int Total { get; set; }
-
-        public int StartIndex { get; set; }
-
-        public int PageSize { get; set; }
-
-        public int CurrentPage { get; set; }
-
-        public int Pages { get; set; }
-
-        public string OrderBy { get; set; }
-
-        public IEnumerable<IResult> Results { get; set; }
-
-        public Exception Error { get; set; }
 
         #endregion
 

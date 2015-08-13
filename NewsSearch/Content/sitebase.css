@@ -3,9 +3,8 @@
 }
 body {
   height: 100%;
-  overflow-y: scroll;
 }
-.topBar {
+.top-bar {
   position: fixed;
   top: 0;
   left: 0;
@@ -17,19 +16,16 @@ body {
 .body-content {
   min-height: 100%;
   position: relative;
-  max-width: 2048px;
-  margin: auto;
 }
 .main-content {
   position: relative;
   padding-bottom: 200px;
-  min-width: 550px;
-  margin: 0 50px;
+}
+.main-content > div.container-fluid {
+  margin: 0 20px;
 }
 footer {
   height: 100px;
-  min-width: 550px;
-  margin: auto;
   position: absolute;
   bottom: 0;
   left: 0;
@@ -42,72 +38,51 @@ footer p {
   color: #dedede;
   text-align: right;
 }
-.searchContainer {
-  text-align: center;
-  padding: 50px 0 50px 0;
-  /*background-color: antiquewhite;*/
+.container-search {
+  padding: 90px 0 30px 0;
 }
-.searchContainer input {
-  font-size: 22px;
-  padding: 4px 6px;
-}
-.searchContainer input[type=text] {
-  width: 500px;
-  border: 1px solid #6b6ba3;
-}
-.searchContainer input[type=submit] {
+.container-search button[type=submit] {
   background-color: #6b6ba3;
   border: 1px solid #6b6ba3;
   color: #dedede;
-  margin-left: 5px;
-  width: 100px;
 }
-.searchContainer input[type=submit]:hover {
+.container-search button[type=submit]:hover {
   cursor: pointer;
   color: #fbfbfb;
 }
-.newsResults {
-  /*max-width: 1024px;
-    margin: auto;*/
+.affix {
+  top: 0;
+  left: 0;
+  margin: 0 !important;
+  width: 100%;
+  z-index: 999;
 }
-.newsResults a {
+.affix .container-search {
+  margin-top: 4px;
+  padding: 14px;
+  background-color: #EEEEEE;
+}
+.affix + .container-fluid {
+  padding-top: 160px;
+}
+.results-news a {
   text-decoration: none;
   color: #4747c3;
 }
-.newsResults a:hover {
+.results-news a:hover {
   color: #0000ff;
   text-decoration: underline;
 }
-.newsResults ul {
-  margin-top: 20px;
-  overflow: auto;
-}
-.newsResults ul li {
-  /*border: 1px dotted cyan;*/
-}
-.newsResults ul .newsSource {
-  font: 700 22px/150% "RobotoSlab-Bold";
-}
-.newsResults ul .newsHeadline {
-  font: 16px/150% "RobotoSlab-Light";
-  clear: left;
-  float: left;
-}
-.newsResults ul .newsTitle {
-  margin-left: 15px;
-  font: 16px/150% "Roboto-LightItalic";
-  float: left;
-}
-.newsResults ul .newsSubSource {
-  float: left;
-  margin-left: 10px;
-  font-family: "Roboto-bold";
+.results-news .newsSubSource {
+  display: inline-block;
+  margin-top: -5px;
   font-size: x-small;
+  font-style: italic;
 }
-.newsResults ul .newsSubSource a {
+.results-news .newsSubSource a {
   color: #7676c8;
 }
-.newsResults ul .newsSubSource a:hover {
+.results-news .newsSubSource a:hover {
   color: #1c1c5f;
 }
 .hidden {

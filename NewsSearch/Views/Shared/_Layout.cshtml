@@ -1,16 +1,19 @@
 ﻿<!DOCTYPE html>
 <html>
 <head>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@ViewBag.Title - My ASP.NET Application</title>
-    @Styles.Render("~/Content/css")
+    <link rel="shortcut icon" href="" />
+    <title>@ViewBag.SiteName@ViewBag.Title</title>
+    @Styles.Render("~/content/css")
+    @Styles.Render("~/content/css/bootstrap")
     @Scripts.Render("~/bundles/modernizr")
+    @RenderSection("styles", required: false)
 </head>
 <body>
-    <div class="topBar"></div>
     <div class="body-content">
-        @RenderSection("topcontent", required: false)
+        <div class="top-bar"></div>
         <div class="main-content">
             @RenderBody()
         </div>
@@ -20,8 +23,10 @@
     </div>
     <div class="hidden">
         @Scripts.Render("~/bundles/jquery")
+        @Scripts.Render("~/bundles/bootstrap")
         @Scripts.Render("~/bundles/sitescripts")
         @RenderSection("scripts", required: false)
+        @Html.Partial("_GoogleAnalytics")
     </div>
 </body>
 </html>

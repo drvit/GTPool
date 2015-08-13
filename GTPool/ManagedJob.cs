@@ -279,7 +279,7 @@ namespace GTPool
                     GenericThreadPoolExceptionType.ManagedJobException, ex.InnerException ?? ex, Parameters);
 
                 Utils.Log(string.Format("{0}", errorMessage));
-                Utils.Log(string.Format("Error: {0}", targetException.Message));
+                Utils.Log(string.Format("Error: {0}", targetException.InnerException));
 
                 if (onError != null)
                 {

@@ -12,7 +12,7 @@ using GTP = GTPool.GenericThreadPool;
 
 namespace NewsSearch.Controllers
 {
-    public class HomeController : Controller
+    public class HomeController : BaseController
     {
         public ActionResult Index()
         {
@@ -31,7 +31,7 @@ namespace NewsSearch.Controllers
                 new YouTubeSearch()
             };
 
-            using (var gtp = GTP.Init<GtpSync>(3))
+            using (var gtp = GTP.Init<GtpSync>(4))
             {
                 foreach (var src in sources)
                 {
@@ -74,6 +74,11 @@ namespace NewsSearch.Controllers
             ViewBag.Message = "Your contact page.";
 
             return View();
+        }
+
+        public ActionResult Error()
+        {
+            return RedirectToAction("Index");
         }
     }
 }

@@ -19,5 +19,16 @@ namespace NewsSearch
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
         }
+
+        //protected void Application_Error(object sender, EventArgs e)
+        //{
+        //    //Log exception
+        //    var exception = Server.GetLastError();
+
+        //    Response.Clear();
+        //    Server.ClearError();
+
+        //    HttpContext.Current.Response.Redirect("~/");
+        //}
     }
 }

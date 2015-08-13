@@ -1,64 +1,115 @@
-﻿@model NewsSearch.Models.SearchViewModel
+﻿@using NewsSearch.Core
+@model NewsSearch.Models.SearchViewModel
 
-@{
-    ViewBag.Title = "Home Page";
-}
+@*@{ ViewBag.Title = ".Search"; }*@
 
-@section topcontent
-{
-    <div class="searchContainer">
-        @using (Html.BeginForm())
-        {
-            <fieldset>
-                @Html.TextBoxFor(m => Model.SearchQuery, "", new {@class = "searchNews"})
-                <input type="submit" value="search"/>
-            </fieldset>
-        }
+<div class="container-fluid" data-spy="affix" data-offset-top="66">
+    <div class="container-search">
+        <div class="row">
+            <div class="col-sm-offset-2 col-sm-8">
+                <div class="container-fluid">
+                    @using (Html.BeginForm("", "", FormMethod.Post, new { @class = "form-inline", role = "form" }))
+                    {
+                        <div class="row">
+                            <div class="col-xs-10">
+                                @Html.TextBoxFor(m => Model.SearchQuery, new { @class = "form-control" })
+                            </div>
+                            <div class="col-xs-2">
+                                <button type="submit" class="btn">Search</button>
+                            </div>
+                        </div>
+                    }
+                </div>
+            </div>
+        </div>
     </div>
-}
+</div>
 
 @if (Model.SearchResults != null)
 {
-    <div class="newsResults">
-        @foreach (var source in Model.SearchResults)
-        {
-            <ul>
-                @if (source.Results != null)
+    var displayed = new List<ISearch>();
+
+    <div class="container-fluid">
+        @{
+            var wiki = Model.SearchResults.First(x => x.SourceName.Equals("wikipedia", StringComparison.InvariantCultureIgnoreCase));
+            displayed.Add(wiki);
+            if (wiki != null && wiki.Results != null)
+            {
+                var wikires = wiki.Results.First();
+                <div class="results-news container-fluid">
+                    <h3>@wiki.SourceName</h3>
+                    <h4><a class="text-primary" href="@wikires.WebUrl" target="_blank">@wikires.Title</a></h4>
+                    <span>@Html.Raw(@wikires.Extract)</span>
+                    <h6><small class="text-info">@wikires.PublicationDate.ToShortDateString()</small></h6>
+                </div>
+            }
+        }
+    </div>
+
+    const int cols = 3;
+
+    while (displayed.Count < Model.SearchResults.Count)
+    {
+        var c = 0;
+        <div class="container-fluid">
+            <div class="row">
+                @foreach (var source in Model.SearchResults.Except(displayed))
                 {
-                    if (source.Error == null)
-                    {
-                        <li class="newsSource">@source.SourceName</li>
-                        foreach (var news in source.Results.OrderByDescending(x => x.PublicationDate))
-                        {
-                            if (!string.IsNullOrEmpty(news.Extract))
+                    c++;
+                    displayed.Add(source);
+                    <div class="col-sm-4">
+                        <div class="table-responsive">
+                            <div class="container">
+                                <h3>@source.SourceName</h3>
+                            </div>
+                            @if (source.Error == null)
                             {
-                                <li>@news.Title</li>
-                                <li>@Html.Raw(@news.Extract)</li>
-                                <li><a href="@news.WebUrl" target="_blank">@news.Title</a></li>
-                                <li>@news.PublicationDate</li>
+                                if (source.Results != null)
+                                {
+                                    <table class="table results-news">
+                                        <tbody>
+                                            @foreach (var news in source.Results.OrderByDescending(x => x.PublicationDate))
+                                            {
+                                                <tr>
+                                                    <td><small>@news.PublicationDate.ToShortDateString()</small></td>
+                                                    <td>
+                                                        <a class="text-info" href="@news.WebUrl" target="_blank">@news.Title</a>
+                                                        @if (!string.IsNullOrEmpty(news.SubSourceName))
+                                                        {
+                                                            <div class="newsSubSource">
+                                                                @{
+                                                            var subSource = !string.IsNullOrEmpty(news.SubSourceDomain) ? news.SubSourceDomain : news.SubSourceName;
+                                                            if (!subSource.ToLower().Contains("http"))
+                                                            {
+                                                                subSource = "http://" + subSource;
+                                                            }
+                                                                }
+                                                                <a href="@subSource" target="_blank">@news.SubSourceName</a>
+                                                            </div>
+                                                        }
+                                                    </td>
+
+                                                </tr>
+                                            }
+                                        </tbody>
+                                    </table>
+                                }
                             }
                             else
                             {
-                                <li class="newsHeadline">@news.PublicationDate.ToShortDateString()</li>
-                                <li class="newsTitle"><a href="@news.WebUrl" target="_blank">@news.Title</a></li>
-                                if (!string.IsNullOrEmpty(news.SubSourceName))
-                                {
-                                    <li class="newsSubSource"><a href="@news.SubSourceDomain" target="_blank">@news.SubSourceName</a></li>
-                                }
+                                <div class="alert alert-danger">@source.Error.Message</div>
                             }
-                        }
-                    }
-                    else
-                    {
-                        <li>@source.Error.Message</li>
-                    }
+                            @if (c == cols)
+                            {
+                                break;
+                            }
+                        </div>
+                    </div>
                 }
-            </ul>
-        }
-    </div>
+            </div>
+        </div>
+    }
 }
-
-
 @section scripts
 {
     @Scripts.Render("~/bundles/searchnews")
