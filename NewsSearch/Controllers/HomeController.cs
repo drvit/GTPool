@@ -61,21 +61,6 @@ namespace NewsSearch.Controllers
             return RedirectToAction("Index");
         }
 
-        
-        public ActionResult About()
-        {
-            ViewBag.Message = "Your application description page.";
-
-            return View();
-        }
-
-        public ActionResult Contact()
-        {
-            ViewBag.Message = "Your contact page.";
-
-            return View();
-        }
-
         public ActionResult Error()
         {
             return RedirectToAction("Index");

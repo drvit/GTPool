@@ -33,10 +33,16 @@ footer {
   background-color: #6b6ba3;
 }
 footer p {
-  /*border-top: 1px solid #dedede;*/
-  margin: 70px 50px 0 50px;
-  color: #dedede;
+  margin: 60px 60px 0 30px;
   text-align: right;
+}
+footer p,
+footer a,
+footer a:visited {
+  color: #dedede;
+}
+footer a:hover {
+  color: #0000ff;
 }
 .container-search {
   padding: 90px 0 30px 0;
