@@ -5,23 +5,18 @@
 
 <div class="container-fluid" data-spy="affix" data-offset-top="66">
     <div class="container-search">
-        <div class="row">
-            <div class="col-sm-offset-2 col-sm-8">
-                <div class="container-fluid">
-                    @using (Html.BeginForm("", "", FormMethod.Post, new { @class = "form-inline", role = "form" }))
-                    {
-                        <div class="row">
-                            <div class="col-xs-10">
-                                @Html.TextBoxFor(m => Model.SearchQuery, new { @class = "form-control" })
-                            </div>
-                            <div class="col-xs-2">
-                                <button type="submit" class="btn">Search</button>
-                            </div>
-                        </div>
-                    }
+        @using (Html.BeginForm("", "", FormMethod.Post, new { @class = "form-inline", role = "form" }))
+        {
+            <div class="row">
+                <div class="hidden-xs col-xs-2"></div>
+                <div class="col-xs-8">
+                    @Html.TextBoxFor(m => Model.SearchQuery, new { @class = "form-control" })
+                </div>
+                <div class="col-xs-1">
+                    <button type="submit" class="btn">Search</button>
                 </div>
             </div>
-        </div>
+        }
     </div>
 </div>
 
@@ -29,19 +24,17 @@
 {
     var displayed = new List<ISearch>();
 
-    <div class="container-fluid">
+    <div class="container-fluid results-news">
         @{
             var wiki = Model.SearchResults.First(x => x.SourceName.Equals("wikipedia", StringComparison.InvariantCultureIgnoreCase));
             displayed.Add(wiki);
             if (wiki != null && wiki.Results != null)
             {
                 var wikires = wiki.Results.First();
-                <div class="results-news container-fluid">
-                    <h3>@wiki.SourceName</h3>
-                    <h4><a class="text-primary" href="@wikires.WebUrl" target="_blank">@wikires.Title</a></h4>
-                    <span>@Html.Raw(@wikires.Extract)</span>
-                    <h6><small class="text-info">@wikires.PublicationDate.ToShortDateString()</small></h6>
-                </div>
+                <h3>@wiki.SourceName</h3>
+                <h4><a class="text-primary" href="@wikires.WebUrl" target="_blank">@Html.Raw(@wikires.Title)</a></h4>
+                <span>@Html.Raw(@wikires.Extract)</span>
+                <h6><small class="text-info-grayedout">@wikires.PublicationDate.ToShortDateString()</small></h6>
             }
         }
     </div>
@@ -51,48 +44,45 @@
     while (displayed.Count < Model.SearchResults.Count)
     {
         var c = 0;
-        <div class="container-fluid">
+        <div class="container-fluid results-news">
             <div class="row">
                 @foreach (var source in Model.SearchResults.Except(displayed))
                 {
                     c++;
                     displayed.Add(source);
                     <div class="col-sm-4">
-                        <div class="table-responsive">
-                            <div class="container">
-                                <h3>@source.SourceName</h3>
-                            </div>
+                        <div class="container-fluid">
+                            <h3>@source.SourceName</h3>
                             @if (source.Error == null)
                             {
                                 if (source.Results != null)
                                 {
-                                    <table class="table results-news">
-                                        <tbody>
-                                            @foreach (var news in source.Results.OrderByDescending(x => x.PublicationDate))
-                                            {
-                                                <tr>
-                                                    <td><small>@news.PublicationDate.ToShortDateString()</small></td>
-                                                    <td>
-                                                        <a class="text-info" href="@news.WebUrl" target="_blank">@news.Title</a>
-                                                        @if (!string.IsNullOrEmpty(news.SubSourceName))
+                                    foreach (var news in source.Results.OrderByDescending(x => x.PublicationDate))
+                                    {
+                                        <div class="row-results-wrapper">
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <small class="text-info-grayedout">@news.PublicationDate.ToShortDateString()</small>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <a class="text-info" href="@news.WebUrl" target="_blank">@news.Title</a>
+                                                    @if (!string.IsNullOrEmpty(news.SubSourceName))
+                                                    {
+                                                        <div class="newsSubSource">
+                                                            @{
+                                                        var subSource = !string.IsNullOrEmpty(news.SubSourceDomain) ? news.SubSourceDomain : news.SubSourceName;
+                                                        if (!subSource.ToLower().Contains("http"))
                                                         {
-                                                            <div class="newsSubSource">
-                                                                @{
-                                                            var subSource = !string.IsNullOrEmpty(news.SubSourceDomain) ? news.SubSourceDomain : news.SubSourceName;
-                                                            if (!subSource.ToLower().Contains("http"))
-                                                            {
-                                                                subSource = "http://" + subSource;
-                                                            }
-                                                                }
-                                                                <a href="@subSource" target="_blank">@news.SubSourceName</a>
-                                                            </div>
+                                                            subSource = "http://" + subSource;
                                                         }
-                                                    </td>
-
-                                                </tr>
-                                            }
-                                        </tbody>
-                                    </table>
+                                                            }
+                                                            <a href="@subSource" target="_blank">@news.SubSourceName</a>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                    }
                                 }
                             }
                             else
@@ -104,6 +94,7 @@
                                 break;
                             }
                         </div>
+
                     </div>
                 }
             </div>
