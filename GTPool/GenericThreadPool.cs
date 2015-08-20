@@ -18,9 +18,9 @@ namespace GTPool
     /// 8. Add a callback function to the task                  -- done
     /// 9. Set priority to execute the task	                    -- done
     /// 10. Allow to abort the task if it hasn't been executed	-- done
-    /// 11. Benchmark the execution	                            -- in progress
+    /// 11. Benchmark the execution	                            -- done
     /// 12. Unit test the Thread Pool	                        -- done
-    /// 13. Create a Demo Application	                        -- in progress
+    /// 13. Create a Demo Application	                        -- done
     /// 14. BONUS: On Error Callback method                     -- done
     /// 15. BONUS: Cancell All Tasks (Jobs)                     -- done
     /// 16. BONUS: Callback method on GTP Dispose               -- done

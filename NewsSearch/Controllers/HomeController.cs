@@ -28,7 +28,8 @@ namespace NewsSearch.Controllers
                 new WikipediaSearch(),
                 new GuardianSearch(),
                 new SocialMentionSearch(),
-                new YouTubeSearch()
+                new YouTubeSearch(),
+                new RedditSearch()
             };
 
             using (var gtp = GTP.Init<GtpSync>(4))

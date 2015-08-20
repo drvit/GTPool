@@ -167,6 +167,11 @@ namespace NewsSearch.Core
 
             try
             {
+                if (mappingFieldName.Contains("_["))
+                {
+                    mappingFieldName = mappingFieldName.Substring(0, mappingFieldName.IndexOf("_[", StringComparison.Ordinal));
+                }
+
                 var node = response;
                 var sourceFieldName = mappingFieldName.Split('.');
                 var index = 0;

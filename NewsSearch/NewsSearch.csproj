@@ -149,6 +149,7 @@
     <Compile Include="Core\Result.cs" />
     <Compile Include="Core\Services\ApiHelper.cs" />
     <Compile Include="Controllers\HomeController.cs" />
+    <Compile Include="Core\Sources\RedditSearch.cs" />
     <Compile Include="Core\Sources\WikipediaSearch.cs" />
     <Compile Include="Core\Sources\YouTubeSearch.cs" />
     <Compile Include="Infrastructure\Utils\DynamicUtils.cs" />
