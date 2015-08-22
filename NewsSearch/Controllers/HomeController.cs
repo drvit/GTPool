@@ -3,14 +3,17 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Web;
 using System.Web.Mvc;
+using GTPool;
 using NewsSearch.Core;
 using NewsSearch.Core.Services;
 using NewsSearch.Core.Sources;
 using NewsSearch.Models;
+using GTP = GTPool.GenericThreadPool;
+using System.Threading;
 
 namespace NewsSearch.Controllers
 {
-    public class HomeController : Controller
+    public class HomeController : BaseController
     {
         public ActionResult Index()
         {
@@ -21,41 +24,57 @@ namespace NewsSearch.Controllers
         [HttpPost]
         public ActionResult Index(SearchViewModel model)
         {
-            var searchResults = new List<Tuple<ISearch, IEnumerable<BaseResult>>>();
-            var guardian = new GuardianSearch();
-            var socialMention = new SocialMentionSearch();
-            var youtube = new YouTubeSearch();
+            var sources = new List<ISearch>
+            {
+                new WikipediaSearch(),
+                new GuardianSearch(),
+                new SocialMentionSearch(),
+                new YouTubeSearch(),
+                new RedditSearch()
+            };
 
-            ApiHelper.Execute(guardian, model.SearchQuery);
-            ApiHelper.Execute(socialMention, model.SearchQuery);
-            ApiHelper.Execute(youtube, model.SearchQuery);
+            var events = new ManualResetEvent[5];
+            var i = 0;
 
-            searchResults.Add(new Tuple<ISearch, IEnumerable<BaseResult>>(guardian, guardian.Results));
-            searchResults.Add(new Tuple<ISearch, IEnumerable<BaseResult>>(socialMention, socialMention.Results));
-            searchResults.Add(new Tuple<ISearch, IEnumerable<BaseResult>>(youtube, youtube.Results));
+            foreach (var src in sources)
+            {
+                events[i] = new ManualResetEvent(false);
+
+                GTP.AddJob(new ManagedAsyncJob(
+                    (Action<ISearch, string>)ApiHelper.Execute,
+                    new object[] { src, model.SearchQuery },
+
+                    ((Action<ManualResetEvent>) (ev => ev.Set())), 
+                    new object[] { events[i] },
+
+                    (ex =>
+                    {
+                        var source = (ISearch) ex.JobParameters[0];
+
+                        sources.First(x => x.SourceName == source.SourceName)
+                            .LoadError(new Dictionary<string, object>
+                                (StringComparer.InvariantCultureIgnoreCase)
+                            {
+                                {"error", ex.InnerException}
+                            });
+                    })));
+                i++;
+            }
+
+            WaitHandle.WaitAll(events, 10000);
 
             if (ModelState.IsValid)
             {
-                model.SearchResults = searchResults;
+                model.SearchResults = sources;
                 return View(model);
             }
 
             return RedirectToAction("Index");
         }
 
-        
-        public ActionResult About()
+        public ActionResult Error()
         {
-            ViewBag.Message = "Your application description page.";
-
-            return View();
-        }
-
-        public ActionResult Contact()
-        {
-            ViewBag.Message = "Your contact page.";
-
-            return View();
+            return RedirectToAction("Index");
         }
     }
 }

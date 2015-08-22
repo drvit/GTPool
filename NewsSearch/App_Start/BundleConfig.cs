@@ -8,6 +8,24 @@ namespace NewsSearch
         // For more information on bundling, visit http://go.microsoft.com/fwlink/?LinkId=301862
         public static void RegisterBundles(BundleCollection bundles)
         {
+            BundleStyles(bundles);
+            BundleScripts(bundles);
+        }
+
+        private static void BundleStyles(BundleCollection bundles)
+        {
+            bundles.Add(new StyleBundle("~/content/css").Include(
+                //"~/Content/cssfonts.css",
+                //"~/Content/cssbase.css",
+                //"~/Content/cssreset.css",
+                "~/Content/sitebase.css"));
+
+            bundles.Add(new StyleBundle("~/content/css/bootstrap").Include(
+                "~/Content/bootstrap.min.css"));
+        }
+
+        private static void BundleScripts(BundleCollection bundles)
+        {
             bundles.Add(new ScriptBundle("~/bundles/jquery").Include(
                 "~/Scripts/jquery-{version}.js"));
 
@@ -23,20 +41,11 @@ namespace NewsSearch
                 "~/Scripts/bootstrap.js",
                 "~/Scripts/respond.js"));
 
-            bundles.Add(new StyleBundle("~/Content/css").Include(
-                "~/Content/cssfonts.css",
-                "~/Content/cssbase.css",
-                "~/Content/cssreset.css",
-                "~/Content/sitebase.css"));
-
             bundles.Add(new ScriptBundle("~/bundles/sitescripts").Include(
                 "~/Scripts/Site/sn-main.js"));
 
             bundles.Add(new ScriptBundle("~/bundles/searchnews").Include(
                 "~/Scripts/Site/sn-searchnews.js"));
-
-            bundles.Add(new StyleBundle("~/Content/bootstrap").Include(
-                "~/Content/bootstrap.css"));
         }
     }
 }

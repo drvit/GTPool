@@ -39,9 +39,16 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Extensions.cs" />
     <Compile Include="GenericThreadPool.cs" />
+    <Compile Include="GenericThreadPoolException.cs" />
+    <Compile Include="GenericThreadPoolMode.cs" />
+    <Compile Include="GenericThreadPoolSettings.cs" />
+    <Compile Include="ManagedJob.cs" />
+    <Compile Include="ManagedThread.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Sandbox\ProducerConsumer.cs" />
+    <Compile Include="Utils.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 

@@ -8,6 +8,7 @@ namespace NewsSearch.Core
         public DateTime PublicationDate { get; set; }
         public string WebUrl { get; set; }
         public string Description { get; set; }
+        public string Extract { get; set; }
         public string SubSourceName { get; set; }
         public string SubSourceFavIcon { get; set; }
         public string SubSourceDomain { get; set; }

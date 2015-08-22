@@ -1,44 +1,114 @@
-﻿@model NewsSearch.Models.SearchViewModel
+﻿@using System.Globalization
+@using NewsSearch.Core
+@model NewsSearch.Models.SearchViewModel
 
-@{
-    ViewBag.Title = "Home Page";
-}
+@*@{ ViewBag.Title = ".Search"; }*@
 
-<div class="searchContainer">
-    @using (Html.BeginForm())
-    {
-        <fieldset>
-            @Html.TextBoxFor(m => Model.SearchQuery, "", new { @class = "searchNews" })
-            <input type="submit" value="search" />
-        </fieldset>
-    }
+<div class="container-fluid" data-spy="affix" data-offset-top="66">
+    <div class="container-search">
+        @using (Html.BeginForm("", "", FormMethod.Post, new { @class = "form-inline", role = "form" }))
+        {
+            <div class="row">
+                <div class="hidden-xs col-xs-2"></div>
+                <div class="col-xs-8">
+                    @Html.TextBoxFor(m => Model.SearchQuery, new { @class = "form-control" })
+                </div>
+                <div class="col-xs-1">
+                    <button type="submit" class="btn">Search</button>
+                </div>
+            </div>
+        }
+    </div>
 </div>
 
 @if (Model.SearchResults != null)
 {
-    <div class="newsResults">
-        @foreach (var source in Model.SearchResults)
-        {
-            <ul>
-                <li class="newsSource">@source.Item1.SourceName</li>
-                @if (source.Item2 != null)
-                {
-                    foreach (var news in source.Item2.OrderByDescending(x => x.PublicationDate))
-                    {
-                        <li class="newsHeadline">@news.PublicationDate.ToShortDateString()</li>
-                        <li class="newsTitle"><a href="@news.WebUrl" target="_blank">@news.Title</a></li>
-                        if (!string.IsNullOrEmpty(news.SubSourceName))
-                        {
-                            <li class="newsSubSource"><a href="@news.SubSourceDomain" target="_blank">@news.SubSourceName</a></li>
-                        }
-                    }
-                }
-            </ul>
+    var displayed = new List<ISearch>();
+
+    <div class="container-fluid results-news">
+        @{
+            var wiki = Model.SearchResults.FirstOrDefault(x => x.SourceName.Equals("wikipedia", StringComparison.InvariantCultureIgnoreCase));
+            if (wiki != null && wiki.Results != null)
+            {
+                displayed.Add(wiki);
+                var wikires = wiki.Results.First();
+                <h3>@wiki.SourceName</h3>
+                <h4><a class="text-primary" href="@wikires.WebUrl" target="_blank">@Html.Raw(@wikires.Title)</a></h4>
+                <span>@Html.Raw(@wikires.Extract)</span>
+                <h6><small class="text-info-grayedout">@wikires.PublicationDate.ToString("dd.MM.yyyy")</small></h6>
+            }
         }
     </div>
+
+    const int cols = 3;
+    var rc = 0;
+
+    while (displayed.Count < Model.SearchResults.Count)
+    {
+        var c = 0;
+        <div class="container-fluid results-news">
+            <div class="row">
+                @foreach (var source in Model.SearchResults.Except(displayed))
+                {
+                    c++;
+                    displayed.Add(source);
+                    <div class="col-sm-4">
+                        <div class="container-fluid">
+                            <h3>@source.SourceName</h3>
+                            @if (source.Error == null)
+                            {
+                                if (source.Results != null)
+                                {
+                                    foreach (var news in source.Results.OrderByDescending(x => x.PublicationDate))
+                                    {
+                                        rc++;
+                                        <div class="row-results-wrapper">
+                                            <div class="row">
+                                                <div class="col-sm-3">
+                                                    <small class="text-info-grayedout">@news.PublicationDate.ToString("dd.MM.yyyy") </small>
+                                                </div>
+                                                <div class="col-sm-9">
+                                                    <a class="text-info" href="@news.WebUrl" target="_blank">@news.Title</a>
+                                                    @if (!string.IsNullOrEmpty(news.SubSourceName))
+                                                    {
+                                                        <div class="newsSubSource">
+                                                            @{
+                                                                var subSource = !string.IsNullOrEmpty(news.SubSourceDomain) ? news.SubSourceDomain : news.SubSourceName;
+                                                                if (!subSource.ToLower().Contains("http"))
+                                                                {
+                                                                    subSource = "http://" + subSource;
+                                                                }
+                                                            }
+                                                            <a href="@subSource" target="_blank">@news.SubSourceName</a>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            </div>
+                                        </div>
+                                        if (rc == 10)
+                                        {
+                                            break;
+                                        }
+                                    }
+                                    rc = 0;
+                                }
+                            }
+                            else
+                            {
+                                <div class="alert alert-danger">@source.Error.Message</div>
+                            }
+                        </div>
+                    </div>
+                    if (c == cols)
+                    {
+                        break;
+                    }
+                }
+            </div>
+
+        </div>
+    }
 }
-
-
 @section scripts
 {
     @Scripts.Render("~/bundles/searchnews")
