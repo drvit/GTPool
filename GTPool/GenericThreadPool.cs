@@ -246,7 +246,10 @@ namespace GTPool
                     }
 
                     Utils.Log("Thread going to sleep");
-                    _threads[CurrentThreadName].Wait(_queueLocker, Settings.IdleTime, Waiting);
+                    
+                    _threads[CurrentThreadName].Wait(_queueLocker, Settings.IdleTime, 
+                        Waiting && _threads.Count <= Settings.MinThreads);
+
                     Utils.Log("Thread woke up");
 
                     lock (_variableLocker)
@@ -450,6 +453,7 @@ namespace GTPool
                 {
                     lock (_gtpMonitorLocker)
                     {
+                        Waiting = true;
                         _gtpMonitorWaiting = true;
                         Monitor.Wait(_gtpMonitorLocker);
                     }
@@ -505,7 +509,6 @@ namespace GTPool
             {
                 lock (_variableLocker)
                 {
-
                     _threadId++;
                     return "__thread_" + _threadId.ToString("D3") + "__";
                 }

@@ -644,7 +644,7 @@ namespace GTPool.Tests
                             new object[] {i},
                             ex =>
                             {
-                                onErrorWasExecuted = onErrorWasExecuted && exceptionMessge.Equals(ex.Message);
+                                onErrorWasExecuted = onErrorWasExecuted && exceptionMessge.Equals(ex.InnerException.Message);
                                 Utils.Log("Exception Handler; " + ex.Message);
                             }));
                     }
@@ -691,7 +691,7 @@ namespace GTPool.Tests
                             null,
                             ex =>
                             {
-                                onErrorWasExecuted = onErrorWasExecuted && exceptionMessge.Equals(ex.Message);
+                                onErrorWasExecuted = onErrorWasExecuted && exceptionMessge.Equals(ex.InnerException.Message);
                                 Utils.Log("Exception Handler; " + ex.Message);
                             }));
                     }

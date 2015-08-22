@@ -6,6 +6,8 @@ using System.Web.Http;
 using System.Web.Mvc;
 using System.Web.Optimization;
 using System.Web.Routing;
+using GTPool;
+using GTP = GTPool.GenericThreadPool;
 
 namespace NewsSearch
 {
@@ -18,6 +20,13 @@ namespace NewsSearch
             FilterConfig.RegisterGlobalFilters(GlobalFilters.Filters);
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
+
+            GTP.Init<GtpAsync> (2, 25, 500);
+        }
+
+        protected void Application_End()
+        {
+            GTP.End();
         }
 
         //protected void Application_Error(object sender, EventArgs e)
