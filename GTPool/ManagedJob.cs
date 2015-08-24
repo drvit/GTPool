@@ -3,156 +3,48 @@ using System.Threading;
 
 namespace GTPool
 {
-    public class ManagedAsyncJob : ManagedJob
+    public class ManagedJob
     {
-        public ManagedAsyncJob(Delegate work) 
-            : base(new GtpAsync(), work)
-        {
-        }
+        public ManagedJob(Delegate work)
+            : this(work, null, null, null, null)
+        { }
 
-        public ManagedAsyncJob(Delegate work, object[] parameters) 
-            : base(new GtpAsync(), work, parameters)
-        {
-        }
+        public ManagedJob(Delegate work, object[] parameters)
+            : this(work, parameters, null, null, null)
+        { }
 
-        public ManagedAsyncJob(Delegate work, object[] parameters, ThreadPriority threadPriority,
-            bool isBackground) 
-            : base(new GtpAsync(), work, parameters, threadPriority, isBackground)
-        {
-        }
+        public ManagedJob(Delegate work, object[] parameters, Action<GenericThreadPoolException> onError)
+            : this(work, parameters, null, null, onError)
+        { }
 
-        public ManagedAsyncJob(Delegate work, object[] parameters, Action<GenericThreadPoolException> onError)
-            : base(new GtpAsync(), work, parameters, onError)
-        {
-        }
-
-        public ManagedAsyncJob(Delegate work, object[] parameters, Action<GenericThreadPoolException> onError, ThreadPriority threadPriority,
+        public ManagedJob(Delegate work, object[] parameters, Action<GenericThreadPoolException> onError, ThreadPriority threadPriority,
             bool isBackground)
-            : base(new GtpAsync(), work, parameters, onError, threadPriority, isBackground)
-        {
-        }
-
-        public ManagedAsyncJob(Delegate work, object[] parameters, Delegate callback,
-            object[] callbackParameters) 
-            : base(new GtpAsync(), work, parameters, callback, callbackParameters)
-        {
-        }
-
-        public ManagedAsyncJob(Delegate work, object[] parameters, Delegate callback,
-            object[] callbackParameters, ThreadPriority threadPriority, bool isBackground)
-            : base(new GtpAsync(), work, parameters, callback, callbackParameters, threadPriority, isBackground)
-        {
-        }
-
-        public ManagedAsyncJob(Delegate work, object[] parameters, Delegate callback,
-            object[] callbackParameters, Action<GenericThreadPoolException> onerror)
-            : base(new GtpAsync(), work, parameters, callback, callbackParameters, onerror)
-        {
-        }
-
-        public ManagedAsyncJob(Delegate work, object[] parameters, Delegate callback,
-            object[] callbackParameters, Action<GenericThreadPoolException> onerror, ThreadPriority threadPriority, bool isBackground)
-            : base(new GtpAsync(), work, parameters, callback, callbackParameters, onerror, threadPriority, isBackground)
-        {
-        }
-    }
-
-    public class ManagedSyncJob : ManagedJob
-    {
-        public ManagedSyncJob(Delegate work) 
-            : base(new GtpSync(), work)
-        {
-        }
-
-        public ManagedSyncJob(Delegate work, object[] parameters)
-            : base(new GtpSync(), work, parameters)
-        {
-        }
-
-        public ManagedSyncJob(Delegate work, object[] parameters, ThreadPriority threadPriority,
-            bool isBackground)
-            : base(new GtpSync(), work, parameters, threadPriority, isBackground)
-        {
-        }
-
-        public ManagedSyncJob(Delegate work, object[] parameters, Action<GenericThreadPoolException> onError)
-            : base(new GtpSync(), work, parameters, onError)
-        {
-        }
-
-        public ManagedSyncJob(Delegate work, object[] parameters, Action<GenericThreadPoolException> onError, ThreadPriority threadPriority,
-            bool isBackground)
-            : base(new GtpSync(), work, parameters, onError, threadPriority, isBackground)
-        {
-        }
-
-        public ManagedSyncJob(Delegate work, object[] parameters, Delegate callback,
-            object[] callbackParameters)
-            : base(new GtpSync(), work, parameters, callback, callbackParameters)
-        {
-        }
-
-        public ManagedSyncJob(Delegate work, object[] parameters, Delegate callback,
-            object[] callbackParameters, ThreadPriority threadPriority, bool isBackground)
-            : base(new GtpSync(), work, parameters, callback, callbackParameters, threadPriority, isBackground)
-        {
-        }
-
-        public ManagedSyncJob(Delegate work, object[] parameters, Delegate callback,
-            object[] callbackParameters, Action<GenericThreadPoolException> onerror)
-            : base(new GtpSync(), work, parameters, callback, callbackParameters, onerror)
-        {
-        }
-
-        public ManagedSyncJob(Delegate work, object[] parameters, Delegate callback,
-            object[] callbackParameters, Action<GenericThreadPoolException> onerror, ThreadPriority threadPriority, bool isBackground)
-            : base(new GtpSync(), work, parameters, callback, callbackParameters, onerror, threadPriority, isBackground)
-        {
-        }
-    }
-
-    public abstract class ManagedJob
-    {
-        protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work)
-            : this(gtpMode, work, null, null, null, null)
+            : this(work, parameters, null, null, onError, threadPriority, isBackground)
         { }
 
-        protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters)
-            : this(gtpMode, work, parameters, null, null, null)
+        public ManagedJob(Delegate work, object[] parameters, ThreadPriority threadPriority, bool isBackground)
+            : this(work, parameters, null, null, null, threadPriority, isBackground)
         { }
 
-        protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters, Action<GenericThreadPoolException> onError)
-            : this(gtpMode, work, parameters, null, null, onError)
+        public ManagedJob(Delegate work, object[] parameters, Delegate callback, object[] callbackParameters)
+            : this(work, parameters, callback, callbackParameters, null)
         { }
 
-        protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters, Action<GenericThreadPoolException> onError, ThreadPriority threadPriority, bool isBackground)
-            : this(gtpMode, work, parameters, null, null, onError, threadPriority, isBackground)
-        { }
-
-        protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters, ThreadPriority threadPriority, bool isBackground)
-            : this(gtpMode, work, parameters, null, null, null, threadPriority, isBackground)
-        { }
-
-        protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters, Delegate callback, object[] callbackParameters)
-            : this(gtpMode, work, parameters, callback, callbackParameters, null)
-        { }
-
-        protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters, Delegate callback, object[] callbackParameters,
+        public ManagedJob(Delegate work, object[] parameters, Delegate callback, object[] callbackParameters,
             ThreadPriority threadPriority, bool isBackground)
-            : this(gtpMode, work, parameters, callback, callbackParameters, null, threadPriority, isBackground)
+            : this(work, parameters, callback, callbackParameters, null, threadPriority, isBackground)
         { }
 
-        protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters, Delegate callback, object[] callbackParameters,
+        public ManagedJob(Delegate work, object[] parameters, Delegate callback, object[] callbackParameters,
             Action<GenericThreadPoolException> onError)
-            : this(gtpMode, work, parameters, callback, callbackParameters, onError, ThreadPriority.Normal, true)
+            : this(work, parameters, callback, callbackParameters, onError, ThreadPriority.Normal, true)
         { }
 
-        protected ManagedJob(GenericThreadPoolMode gtpMode, Delegate work, object[] parameters, Delegate callback, object[] callbackParameters,
+        public ManagedJob(Delegate work, object[] parameters, Delegate callback, object[] callbackParameters,
             Action<GenericThreadPoolException> onError, ThreadPriority threadPriority, bool isBackground)
         {
             ThreadPriority = threadPriority;
             IsBackground = isBackground;
-            GtpMode = gtpMode;
             Status = WorkStatus.NotStarted;
             JobId = Utils.GenerateUniqueNumber();
 
@@ -172,8 +64,6 @@ namespace GTPool
         private readonly Action<GenericThreadPoolException> _onError;
 
         public int JobId { get; private set; }
-
-        public GenericThreadPoolMode GtpMode { get; private set; }
 
         public ThreadPriority ThreadPriority { get; private set; }
 

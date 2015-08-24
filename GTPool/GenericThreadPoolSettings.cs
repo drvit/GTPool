@@ -30,7 +30,6 @@ namespace GTPool
 
             if (!gtpMode.WithWait)
             {
-                MinThreads++;
                 IdleTime = Math.Min(Math.Max(MinIdleTime, idleTime), MaxIdleTime);
             }
         }
@@ -38,11 +37,6 @@ namespace GTPool
         public int MinThreads { get; private set; }
 
         public int MaxThreads { get; private set; }
-
-        public int NumberOfThreads
-        {
-            get { return MaxThreads; }
-        }
 
         public int IdleTime { get; private set; }
     }

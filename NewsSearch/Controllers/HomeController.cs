@@ -33,20 +33,12 @@ namespace NewsSearch.Controllers
                 new RedditSearch()
             };
 
-            var events = new ManualResetEvent[5];
-            var i = 0;
-
+            var groupedById = 33;
             foreach (var src in sources)
             {
-                events[i] = new ManualResetEvent(false);
-
-                GTP.AddJob(new ManagedAsyncJob(
+                GTP.AddJob(new ManagedJob(
                     (Action<ISearch, string>)ApiHelper.Execute,
                     new object[] { src, model.SearchQuery },
-
-                    ((Action<ManualResetEvent>) (ev => ev.Set())), 
-                    new object[] { events[i] },
-
                     (ex =>
                     {
                         var source = (ISearch) ex.JobParameters[0];
@@ -57,11 +49,10 @@ namespace NewsSearch.Controllers
                             {
                                 {"error", ex.InnerException}
                             });
-                    })));
-                i++;
+                    })), groupedById);
             }
 
-            WaitHandle.WaitAll(events, 10000);
+            GTP.WaitAllJobs(groupedById);
 
             if (ModelState.IsValid)
             {

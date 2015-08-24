@@ -118,7 +118,7 @@ namespace GTPool.Sandbox
                 Console.WriteLine("My car is: " + cars[c][0] + " - WT: " + wt + " : " + Utils.HiResDateTime.UtcNow);
             };
 
-            for (var t = 0; t < cars.Count(); t++)
+            for (var t = 0; t < cars.Length; t++)
             {
                 //Thread.Sleep(1000);
                 pman.AddJob(job, new object[] { t, string.Empty });
@@ -127,7 +127,7 @@ namespace GTPool.Sandbox
             Action<string> job2 = (wt) =>
             {
                 Thread.Sleep(3000);
-                Console.WriteLine("I have got " + cars.Count() + " cars - WT: " + wt + " : " + Utils.HiResDateTime.UtcNow);
+                Console.WriteLine("I have got " + cars.Length + " cars - WT: " + wt + " : " + Utils.HiResDateTime.UtcNow);
             };
 
             pman.AddJob(job2, new object[] {string.Empty}, ThreadPriority.AboveNormal, false);

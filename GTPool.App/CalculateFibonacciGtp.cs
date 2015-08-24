@@ -24,7 +24,7 @@ namespace GTPool.App
                 doneEvents[i] = new ManualResetEvent(false);
                 var f = new Fibonacci(i + fibonacciSeed, doneEvents[i]);
                 fibArray[i] = f;
-                GTP.AddJob(new ManagedAsyncJob((Action<object>) f.ThreadPoolCallback, new object[] { i }));
+                GTP.AddJob(new ManagedJob((Action<object>) f.ThreadPoolCallback, new object[] { i }));
             }
 
             // Wait for all threads in pool to calculation...

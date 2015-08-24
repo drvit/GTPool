@@ -21,12 +21,12 @@ namespace NewsSearch
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
 
-            GTP.Init<GtpAsync> (2, 25, 500);
+            GTP.Init(1, 1, 500);
         }
 
         protected void Application_End()
         {
-            GTP.End();
+            GTP.Shutdown();
         }
 
         //protected void Application_Error(object sender, EventArgs e)

@@ -157,13 +157,13 @@ namespace GTPool.App
                 TryGetIntArg(args, "TA", ref _maxThreads);
                 TryGetIntArg(args, "TT", ref _idleTime);
 
-                GTP.Init<GtpAsync>(_minThreads, _maxThreads, _idleTime);
+                GTP.Init(_minThreads, _maxThreads, _idleTime);
             }
         }
 
         private static void ApplicationEnd()
         {
-            GTP.End(true);
+            GTP.Shutdown(true);
             Utils.WaitLoggingToFinish();
         }
 

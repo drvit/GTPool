@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Runtime.Remoting.Channels;
 using System.Security.Cryptography.X509Certificates;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
@@ -38,9 +39,7 @@ namespace GTPool.Tests
             {
                 LogTestRunning();
 
-                GenericThreadPool.Init();
                 Assert.IsNotNull(GenericThreadPool.Current);
-                GenericThreadPool.End();
             }
 
             [TestMethod]
@@ -49,17 +48,31 @@ namespace GTPool.Tests
             {
                 LogTestRunning();
 
-                const int numberOfThreads = 5;
+                //TestHelper.ExecuteTestInMta(() =>
+                //{
+                    const int minThreads = 3;
+                    const int maxThreads = 5;
+                    const int idleTime = 565;
 
-                using (var gtp = GenericThreadPool.Init<GtpSync>(numberOfThreads))
-                {
-                    Assert.IsTrue(gtp.Settings.NumberOfThreads == numberOfThreads);
-                }
+                    try
+                    {
+                        GenericThreadPool.Init(minThreads, maxThreads, idleTime);
+                        Assert.AreEqual(GenericThreadPool.Settings.MinThreads, minThreads);
+                        Assert.AreEqual(GenericThreadPool.Settings.MaxThreads, maxThreads);
+                        Assert.AreEqual(GenericThreadPool.Settings.IdleTime, idleTime);
+                        GenericThreadPool.Shutdown();
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.Fail("Error: " + ex.Message);
+                    }
+
+                //});
             }
 
             [TestMethod]
             [TestCategory("GenericThreadPool")]
-            public void initialized_instance_cant_change_settings()
+            public void initialized_instance_cant_be_initialized_again()
             {
                 LogTestRunning();
                 
@@ -71,93 +84,70 @@ namespace GTPool.Tests
                 const int newMaxThreads = 15;
                 const int newIdleTime = 560;
 
-                var gtp = GenericThreadPool
-                    .Init<GtpAsync>(minThreads, maxThreads, idleTime);
+                GenericThreadPool.Init(minThreads, maxThreads, idleTime);
+                var gtpSettings = GenericThreadPool.Settings;
 
-                var newGtp = GenericThreadPool
-                    .Init<GtpAsync>(newMinThreads, newMaxThreads, newIdleTime);
+                GenericThreadPool.Init(newMinThreads, newMaxThreads, newIdleTime);
+                var newGtpSettings = GenericThreadPool.Settings;
 
                 Assert.IsTrue(
-                    gtp.Settings.MinThreads == newGtp.Settings.MinThreads && newGtp.Settings.MinThreads != newMinThreads &&
-                    gtp.Settings.MaxThreads == newGtp.Settings.MaxThreads && newGtp.Settings.MaxThreads != newMaxThreads &&
-                    gtp.Settings.IdleTime == newGtp.Settings.IdleTime && newGtp.Settings.IdleTime != newIdleTime);
+                    gtpSettings.MinThreads == newGtpSettings.MinThreads && newGtpSettings.MinThreads != newMinThreads &&
+                    gtpSettings.MaxThreads == newGtpSettings.MaxThreads && newGtpSettings.MaxThreads != newMaxThreads &&
+                    gtpSettings.IdleTime == newGtpSettings.IdleTime && newGtpSettings.IdleTime != newIdleTime);
 
-                GenericThreadPool.End();
+                GenericThreadPool.Shutdown();
             }
-
+            
             [TestMethod]
             [TestCategory("GenericThreadPool")]
-            public void initialized_instance_cant_change_mode_before_dispose()
+            public void disposed_instance_can_be_initialized()
             {
                 LogTestRunning();
 
-                GenericThreadPool.Init<GtpAsync>(1, 5, 100);
+                const int minThreads = 1;
+                const int maxThreads = 7;
+                const int idleTime = 350;
 
-                var modeException = new Exception();
+                GenericThreadPool.Init(minThreads, maxThreads, idleTime);
+                GenericThreadPool.Shutdown();
+
+                const int newMinThreads = 5;
+                const int newMaxThreads = 15;
+                const int newIdleTime = 560;
 
                 try
                 {
-                    GenericThreadPool.Init<GtpSync>(5);
-                }
-                catch (GenericThreadPoolException ex)
-                {
-                    modeException = ex;
-                }
-                catch (Exception ex)
-                {
-                    modeException = ex;
-                }
-                finally
-                {
-                    Assert.AreEqual(modeException.Message,
-                        GenericThreadPoolExceptionType.IncompatibleGtpMode.ToDescription());
-                }
-            }
-
-            [TestMethod]
-            [TestCategory("GenericThreadPool")]
-            public void disposed_instance_can_be_initialized_with_different_mode()
-            {
-                LogTestRunning();
-
-                GenericThreadPool.Init<GtpAsync>(1, 5, 100);
-                GenericThreadPool.End();
-
-                GenericThreadPool instance = null;
-                try
-                {
-                    instance = GenericThreadPool.Init<GtpSync>(5);
-                    Assert.IsInstanceOfType(GenericThreadPool.Current.GtpMode, typeof (GtpSync));
+                    GenericThreadPool.Init(newMinThreads, newMaxThreads, newIdleTime);
+                    Assert.IsNotNull(GenericThreadPool.Settings);
+                    Assert.AreEqual(GenericThreadPool.Settings.MinThreads, newMinThreads);
+                    Assert.AreEqual(GenericThreadPool.Settings.MaxThreads, newMaxThreads);
+                    Assert.AreEqual(GenericThreadPool.Settings.IdleTime, newIdleTime);
+                    GenericThreadPool.Shutdown();
                 }
                 catch (Exception)
                 {
+                    if (GenericThreadPool.IsInitialized)
+                        GenericThreadPool.Shutdown();
+
                     Assert.Inconclusive("Failed to assert.");
-                }
-                finally
-                {
-                    if (instance != null)
-                        instance.Dispose();
-                    else
-                        Assert.Fail();
                 }
             }
 
             [TestMethod]
             [TestCategory("GenericThreadPool")]
-            public void disposed_instance_is_disposed()
+            public void disposed_instance_is_really_disposed()
             {
                 LogTestRunning();
 
-                GenericThreadPool.Init<GtpAsync>(1, 5, 100);
-                GenericThreadPool.End();
+                GenericThreadPool.Init(1, 5, 100);
+                GenericThreadPool.Shutdown();
 
-                Assert.IsTrue(GenericThreadPool.Current.Settings == null 
-                    && GenericThreadPool.Current.GtpMode == null);
+                Assert.IsNull(GenericThreadPool.Settings);
             }
 
             [TestMethod]
             [TestCategory("GenericThreadPool")]
-            public void disposing_async_pool_can_call_dispose_callback()
+            public void disposing_thread_pool_must_call_dispose_callback_method()
             {
                 LogTestRunning();
 
@@ -169,30 +159,9 @@ namespace GTPool.Tests
                     Utils.Log("Test: disposing_async_pool_can_call_dispose_callback");
                 };
 
-                GenericThreadPool.Init<GtpAsync>(1, 3, 100, disposeCallback, new object[] {true});
+                GenericThreadPool.Init(1, 3, 100, disposeCallback, new object[] {true});
 
-                GenericThreadPool.End();
-
-                Assert.IsTrue(jobReturn);
-            }
-
-            [TestMethod]
-            [TestCategory("GenericThreadPool")]
-            public void disposing_sync_pool_can_call_dispose_callback()
-            {
-                LogTestRunning();
-
-                var jobReturn = false;
-
-                Action<bool> disposeCallback = ret =>
-                {
-                    jobReturn = ret;
-                    Utils.Log("Test: disposing_sync_pool_can_call_dispose_callback");
-                };
-
-                var gtp = GenericThreadPool.Init<GtpSync>(2, disposeCallback, new object[] {true});
-
-                gtp.Dispose();
+                GenericThreadPool.Shutdown();
 
                 Assert.IsTrue(jobReturn);
             }
@@ -203,7 +172,7 @@ namespace GTPool.Tests
         {
             [TestMethod]
             [TestCategory("GenericThreadPool")]
-            public void can_add_job_as_closures_to_async_pool()
+            public void can_add_job_as_closures_to_thread_pool()
             {
                 LogTestRunning();
 
@@ -211,7 +180,7 @@ namespace GTPool.Tests
 
                 try
                 {
-                    GenericThreadPool.Init<GtpAsync>(1, 3, 100);
+                    GenericThreadPool.Init(1, 3, 100);
 
                     Action<bool> job = ret =>
                     {
@@ -219,9 +188,9 @@ namespace GTPool.Tests
                         Utils.Log("Test: can_add_job_as_closures_to_async_pool");
                     };
 
-                    GenericThreadPool.AddJob(new ManagedAsyncJob(job, new object[] {true}));
+                    GenericThreadPool.AddJob(new ManagedJob(job, new object[] {true}));
 
-                    GenericThreadPool.End();
+                    GenericThreadPool.Shutdown();
                 }
                 catch (Exception)
                 {
@@ -235,38 +204,7 @@ namespace GTPool.Tests
 
             [TestMethod]
             [TestCategory("GenericThreadPool")]
-            public void can_add_job_as_closures_to_sync_pool()
-            {
-                LogTestRunning();
-
-                var jobReturn = false;
-
-                try
-                {
-                    using (var gtp = GenericThreadPool.Init<GtpSync>(3))
-                    {
-                        Action<bool> job = ret =>
-                        {
-                            jobReturn = ret;
-                            Utils.Log("Test: can_add_job_as_closures_to_sync_pool");
-                        };
-
-                        gtp.AddJob(new ManagedSyncJob(job, new object[] {true}));
-                    }
-                }
-                catch (Exception)
-                {
-                    Assert.Inconclusive("Failed to assert.");
-                }
-                finally
-                {
-                    Assert.IsTrue(jobReturn);
-                }
-            }
-
-            [TestMethod]
-            [TestCategory("GenericThreadPool")]
-            public void can_add_job_with_callback_as_closures_to_async_pool()
+            public void can_add_job_with_callback_as_closures_to_thread_pool()
             {
                 LogTestRunning();
 
@@ -274,7 +212,7 @@ namespace GTPool.Tests
 
                 try
                 {
-                    GenericThreadPool.Init<GtpAsync>(1, 3, 100);
+                    GenericThreadPool.Init(1, 3, 100);
 
                     Func<bool, bool> job = assertRet =>
                     {
@@ -288,10 +226,10 @@ namespace GTPool.Tests
                         isTrue = assertRet;
                     };
 
-                    GenericThreadPool.AddJob(new ManagedAsyncJob(job, new object[] {true},
+                    GenericThreadPool.AddJob(new ManagedJob(job, new object[] {true},
                         callback, new object[] {"Test: ASYNC CALBACK"}));
 
-                    GenericThreadPool.End();
+                    GenericThreadPool.Shutdown();
                 }
                 catch (Exception)
                 {
@@ -305,46 +243,7 @@ namespace GTPool.Tests
 
             [TestMethod]
             [TestCategory("GenericThreadPool")]
-            public void can_add_job_with_callback_as_closures_to_sync_pool()
-            {
-                LogTestRunning();
-
-                var isTrue = false;
-
-                try
-                {
-                    Func<bool, bool> job = assertRet =>
-                    {
-                        Utils.Log("Test: can_add_job_with_callback_as_closures_to_sync_pool");
-                        return assertRet;
-                    };
-
-                    Action<string, bool> callback = (print, assertRet) =>
-                    {
-                        Utils.Log(print);
-                        isTrue = assertRet;
-                    };
-
-                    using (var gtp = GenericThreadPool.Init<GtpSync>(3))
-                    {
-                        gtp.AddJob(new ManagedSyncJob(job, new object[] {true},
-                            callback, new object[] {"Test: SYNC CALBACK"}));
-
-                    }
-                }
-                catch (Exception)
-                {
-                    Assert.Inconclusive("Failed to assert.");
-                }
-                finally
-                {
-                    Assert.IsTrue(isTrue);
-                }
-            }
-
-            [TestMethod]
-            [TestCategory("GenericThreadPool")]
-            public void add_jobs_using_the_5_different_thread_priorities_to_async_pool()
+            public void add_jobs_using_the_5_different_thread_priorities_to_thread_pool()
             {
                 LogTestRunning();
 
@@ -391,81 +290,13 @@ namespace GTPool.Tests
                         Utils.Log("---------------------------------------------------------------");
                     };
 
-                    GenericThreadPool.Init<GtpAsync>(1, 3, 100);
-                    GenericThreadPool.AddJob(new ManagedAsyncJob(job1, null, ThreadPriority.Lowest, true));
-                    GenericThreadPool.AddJob(new ManagedAsyncJob(job2, null, ThreadPriority.BelowNormal, true));
-                    GenericThreadPool.AddJob(new ManagedAsyncJob(job3, null, ThreadPriority.Normal, true));
-                    GenericThreadPool.AddJob(new ManagedAsyncJob(job4, null, ThreadPriority.AboveNormal, true));
-                    GenericThreadPool.AddJob(new ManagedAsyncJob(job5, null, ThreadPriority.Highest, true));
-                    GenericThreadPool.End();
-                }
-                catch (Exception)
-                {
-                    Assert.Inconclusive("Failed to assert.");
-                }
-                finally
-                {
-                    Assert.IsTrue(isJob1True && isJob2True && isJob3True && isJob4True && isJob5True);
-                }
-            }
-
-            [TestMethod]
-            [TestCategory("GenericThreadPool")]
-            public void add_jobs_using_the_5_different_thread_priorities_to_sync_pool()
-            {
-                LogTestRunning();
-
-                var isJob1True = false;
-                var isJob2True = false;
-                var isJob3True = false;
-                var isJob4True = false;
-                var isJob5True = false;
-
-                try
-                {
-                    Action job1 = () =>
-                    {
-                        Utils.Log("---------------------------------------------------------------");
-                        isJob1True = Thread.CurrentThread.Priority == ThreadPriority.Lowest;
-                        Utils.Log("Test: add_jobs_using_the_5_different_thread_priorities_to_sync_pool - job1");
-                    };
-
-                    Action job2 = () =>
-                    {
-                        isJob2True = Thread.CurrentThread.Priority == ThreadPriority.BelowNormal;
-                        Utils.Log("Test: add_jobs_using_the_5_different_thread_priorities_to_sync_pool - job2");
-                        Utils.Log("---------------------------------------------------------------");
-                    };
-
-                    Action job3 = () =>
-                    {
-                        isJob3True = Thread.CurrentThread.Priority == ThreadPriority.Normal;
-                        Utils.Log("Test: add_jobs_using_the_5_different_thread_priorities_to_sync_pool - job3");
-                        Utils.Log("---------------------------------------------------------------");
-                    };
-
-                    Action job4 = () =>
-                    {
-                        isJob4True = Thread.CurrentThread.Priority == ThreadPriority.AboveNormal;
-                        Utils.Log("Test: add_jobs_using_the_5_different_thread_priorities_to_sync_pool - job4");
-                        Utils.Log("---------------------------------------------------------------");
-                    };
-
-                    Action job5 = () =>
-                    {
-                        isJob5True = Thread.CurrentThread.Priority == ThreadPriority.Highest;
-                        Utils.Log("Test: add_jobs_using_the_5_different_thread_priorities_to_sync_pool - job5");
-                        Utils.Log("---------------------------------------------------------------");
-                    };
-
-                    using (var gtp = GenericThreadPool.Init<GtpSync>(3))
-                    {
-                        gtp.AddJob(new ManagedSyncJob(job1, null, ThreadPriority.Lowest, true));
-                        gtp.AddJob(new ManagedSyncJob(job2, null, ThreadPriority.BelowNormal, true));
-                        gtp.AddJob(new ManagedSyncJob(job3, null, ThreadPriority.Normal, true));
-                        gtp.AddJob(new ManagedSyncJob(job4, null, ThreadPriority.AboveNormal, true));
-                        gtp.AddJob(new ManagedSyncJob(job5, null, ThreadPriority.Highest, true));
-                    }
+                    GenericThreadPool.Init(1, 3, 100);
+                    GenericThreadPool.AddJob(new ManagedJob(job1, null, ThreadPriority.Lowest, true));
+                    GenericThreadPool.AddJob(new ManagedJob(job2, null, ThreadPriority.BelowNormal, true));
+                    GenericThreadPool.AddJob(new ManagedJob(job3, null, ThreadPriority.Normal, true));
+                    GenericThreadPool.AddJob(new ManagedJob(job4, null, ThreadPriority.AboveNormal, true));
+                    GenericThreadPool.AddJob(new ManagedJob(job5, null, ThreadPriority.Highest, true));
+                    GenericThreadPool.Shutdown();
                 }
                 catch (Exception)
                 {
@@ -502,10 +333,10 @@ namespace GTPool.Tests
                         Utils.Log("---------------------------------------------------------------");
                     };
 
-                    GenericThreadPool.Init<GtpAsync>(1, 3, 100);
-                    GenericThreadPool.AddJob(new ManagedAsyncJob(job1, null, ThreadPriority.BelowNormal, true));
-                    GenericThreadPool.AddJob(new ManagedAsyncJob(job2, null, ThreadPriority.AboveNormal, false));
-                    GenericThreadPool.End();
+                    GenericThreadPool.Init(1, 3, 100);
+                    GenericThreadPool.AddJob(new ManagedJob(job1, null, ThreadPriority.BelowNormal, true));
+                    GenericThreadPool.AddJob(new ManagedJob(job2, null, ThreadPriority.AboveNormal, false));
+                    GenericThreadPool.Shutdown();
                 }
                 catch (Exception)
                 {
@@ -519,48 +350,7 @@ namespace GTPool.Tests
 
             [TestMethod]
             [TestCategory("GenericThreadPool")]
-            public void add_jobs_as_background_and_foreground_to_sync_pool()
-            {
-                LogTestRunning();
-
-                var isJob1True = false;
-                var isJob2True = false;
-
-                try
-                {
-                    Action job1 = () =>
-                    {
-                        Utils.Log("---------------------------------------------------------------");
-                        isJob1True = Thread.CurrentThread.IsBackground;
-                        Utils.Log("Test: add_jobs_as_background_and_foreground_to_sync_pool - job1");
-                    };
-
-                    Action job2 = () =>
-                    {
-                        isJob2True = !Thread.CurrentThread.IsBackground;
-                        Utils.Log("Test: add_jobs_as_background_and_foreground_to_sync_pool - job2");
-                        Utils.Log("---------------------------------------------------------------");
-                    };
-
-                    using (var gtp = GenericThreadPool.Init<GtpSync>(3))
-                    {
-                        gtp.AddJob(new ManagedSyncJob(job1, null, ThreadPriority.BelowNormal, true));
-                        gtp.AddJob(new ManagedSyncJob(job2, null, ThreadPriority.AboveNormal, false));
-                    }
-                }
-                catch (Exception)
-                {
-                    Assert.Inconclusive("Failed to assert.");
-                }
-                finally
-                {
-                    Assert.IsTrue(isJob1True && isJob2True);
-                }
-            }
-
-            [TestMethod]
-            [TestCategory("GenericThreadPool")]
-            public void added_jobs_with_higher_priority_are_picked_first()
+            public void added_jobs_with_higher_priority_are_picked_up_first()
             {
                 LogTestRunning();
 
@@ -602,102 +392,161 @@ namespace GTPool.Tests
                     Utils.Log("Test: jobs_with_higher_priority_are_picked_first - ThreadPriority.Highest");
                 };
 
-                using (var gtp = GenericThreadPool.Init<GtpSync>(1))
-                {
-                    gtp.AddJob(new ManagedSyncJob(job1, null, ThreadPriority.Lowest, true));
-                    gtp.AddJob(new ManagedSyncJob(job2, null, ThreadPriority.BelowNormal, true));
-                    gtp.AddJob(new ManagedSyncJob(job3, null, ThreadPriority.Normal, true));
-                    gtp.AddJob(new ManagedSyncJob(job4, null, ThreadPriority.AboveNormal, true));
-                    gtp.AddJob(new ManagedSyncJob(job5, null, ThreadPriority.Highest, true));
-                }
+                GenericThreadPool.Init(1, 1, 50);
+                GenericThreadPool.AddJob(new ManagedJob(job1, null, ThreadPriority.Lowest, true));
+                GenericThreadPool.AddJob(new ManagedJob(job2, null, ThreadPriority.BelowNormal, true));
+                GenericThreadPool.AddJob(new ManagedJob(job3, null, ThreadPriority.Normal, true));
+                GenericThreadPool.AddJob(new ManagedJob(job4, null, ThreadPriority.AboveNormal, true));
+                GenericThreadPool.AddJob(new ManagedJob(job5, null, ThreadPriority.Highest, true));
+                GenericThreadPool.Shutdown();
 
                 Assert.IsTrue(isCorrectOrder);
             }
 
             [TestMethod]
             [TestCategory("GenericThreadPool")]
-            public void added_jobs_exception_is_handled_by_onerror_callback()
+            public void added_job_with_exception_handling_method_is_handled_by_onerror_callback()
             {
                 LogTestRunning();
 
                 var onErrorWasExecuted = true;
                 const string exceptionMessge = "Exception from can_cancel_all_jobs_that_have_not_been_picked";
 
-                using (var gtp = GenericThreadPool.Init<GtpSync>(4))
+                GenericThreadPool.Init(1, 4, 500);
+                for (var i = 0; i < 10; i++)
                 {
-                    for (var i = 0; i < 10; i++)
-                    {
-                        gtp.AddJob(new ManagedSyncJob(
-                            (Action<int>) (index =>
+                    GenericThreadPool.AddJob(new ManagedJob(
+                        (Action<int>) (index =>
+                        {
+                            Utils.Log(
+                                "Test: can_cancel_all_jobs_that_have_not_been_picked - WORK Method - index = " +
+                                index);
+                            if (index == 6)
                             {
                                 Utils.Log(
-                                    "Test: can_cancel_all_jobs_that_have_not_been_picked - WORK Method - index = " +
+                                    "Test: can_cancel_all_jobs_that_have_not_been_picked - Throw Exception - index = " +
                                     index);
-                                if (index == 6)
-                                {
-                                    Utils.Log(
-                                        "Test: can_cancel_all_jobs_that_have_not_been_picked - Throw Exception - index = " +
-                                        index);
-                                    throw new Exception(exceptionMessge);
-                                }
-                            }),
-                            new object[] {i},
-                            ex =>
-                            {
-                                onErrorWasExecuted = onErrorWasExecuted && exceptionMessge.Equals(ex.InnerException.Message);
-                                Utils.Log("Exception Handler; " + ex.Message);
-                            }));
-                    }
+                                throw new Exception(exceptionMessge);
+                            }
+                        }),
+                        new object[] {i},
+                        ex =>
+                        {
+                            onErrorWasExecuted = onErrorWasExecuted && exceptionMessge.Equals(ex.InnerException.Message);
+                            Utils.Log("Exception Handler; " + ex.Message);
+                        }));
                 }
+                GenericThreadPool.Shutdown();
 
                 Assert.IsTrue(onErrorWasExecuted);
             }
 
             [TestMethod]
             [TestCategory("GenericThreadPool")]
-            public void added_jobs_callbacks_exception_is_handled_by_onerror_calback()
+            public void added_job_with_exception_handling_method_is_handled_by_onerror_calback()
             {
                 LogTestRunning();
 
                 var onErrorWasExecuted = true;
                 const string exceptionMessge = "Exception from jobs_callbacks_exception_is_handled_by_onerror_calback";
 
-                using (var gtp = GenericThreadPool.Init<GtpSync>(3))
+                GenericThreadPool.Init(1, 3, 500);
+                for (var i = 0; i < 10; i++)
                 {
-                    for (var i = 0; i < 10; i++)
-                    {
-                        gtp.AddJob(new ManagedSyncJob(
-                            (Func<int, int>) (index =>
+                    GenericThreadPool.AddJob(new ManagedJob(
+                        (Func<int, int>) (index =>
+                        {
+                            Utils.Log(
+                                "Test: jobs_callbacks_exception_is_handled_by_onerror_calback - WORK Method - index = " +
+                                index);
+                            return index;
+                        }),
+                        new object[] {i},
+                        (Action<int>) (index =>
+                        {
+                            Utils.Log(
+                                "Test: jobs_callbacks_exception_is_handled_by_onerror_calback - CALLBACK Method - index = " +
+                                index);
+                            if (index == 7)
                             {
                                 Utils.Log(
-                                    "Test: jobs_callbacks_exception_is_handled_by_onerror_calback - WORK Method - index = " +
+                                    "Test: jobs_callbacks_exception_is_handled_by_onerror_calback - CALLBACK Method - Throw Exception - index = " +
                                     index);
-                                return index;
-                            }),
-                            new object[] {i},
-                            (Action<int>) (index =>
-                            {
-                                Utils.Log(
-                                    "Test: jobs_callbacks_exception_is_handled_by_onerror_calback - CALLBACK Method - index = " +
-                                    index);
-                                if (index == 7)
-                                {
-                                    Utils.Log(
-                                        "Test: jobs_callbacks_exception_is_handled_by_onerror_calback - CALLBACK Method - Throw Exception - index = " +
-                                        index);
-                                    throw new Exception(exceptionMessge);
-                                }
-                            }),
-                            null,
-                            ex =>
-                            {
-                                onErrorWasExecuted = onErrorWasExecuted && exceptionMessge.Equals(ex.InnerException.Message);
-                                Utils.Log("Exception Handler; " + ex.Message);
-                            }));
-                    }
+                                throw new Exception(exceptionMessge);
+                            }
+                        }),
+                        null,
+                        ex =>
+                        {
+                            onErrorWasExecuted = onErrorWasExecuted && exceptionMessge.Equals(ex.InnerException.Message);
+                            Utils.Log("Exception Handler; " + ex.Message);
+                        }));
                 }
+                GenericThreadPool.Shutdown();
 
                 Assert.IsTrue(onErrorWasExecuted);
+            }
+
+            [TestMethod]
+            [TestCategory("GenericThreadPool")]
+            public void added_jobs_with_group_by_id_wait_all_to_finish()
+            {
+                LogTestRunning();
+
+                TestHelper.ExecuteTestInMta(() =>
+                {
+                    var job1Finished = false;
+                    var job2Finished = false;
+                    var job4Finished = false;
+
+                    Action job1 = () =>
+                    {
+                        Thread.Sleep(2000);
+                        job1Finished = true;
+                    };
+
+                    Action job2 = () =>
+                    {
+                        Thread.Sleep(1000);
+                        job2Finished = true;
+                    };
+
+                    Action job3 = () =>
+                    {
+                        Thread.Sleep(1);
+                    };
+
+                    Action job4 = () =>
+                    {
+                        Thread.Sleep(100);
+                        job4Finished = true;
+                    };
+
+                    Action job5 = () =>
+                    {
+                        Thread.Sleep(5000);
+                    };
+                    try
+                    {
+                        GenericThreadPool.Init(1, 5, 300);
+                        GenericThreadPool.AddJob(new ManagedJob(job1), 50);
+                        GenericThreadPool.AddJob(new ManagedJob(job2), 50);
+                        GenericThreadPool.AddJob(new ManagedJob(job3));
+                        GenericThreadPool.AddJob(new ManagedJob(job4), 50);
+                        GenericThreadPool.AddJob(new ManagedJob(job5));
+
+                        GenericThreadPool.WaitAllJobs(50);
+                        Assert.IsTrue(job1Finished && job2Finished && job4Finished);
+                    }
+                    catch (Exception ex)
+                    {
+                        Assert.Fail(ex.Message);
+                    }
+                    finally
+                    {
+                        GenericThreadPool.Shutdown();
+                    }
+                });
             }
         }
 
@@ -714,7 +563,7 @@ namespace GTPool.Tests
                 {
                     var executedJobs = new int[4];
                     var index = -1;
-                    var managedJobs = new List<ManagedAsyncJob>();
+                    var managedJobs = new List<ManagedJob>();
 
                     Action<int> job = jobNumber =>
                     {
@@ -724,11 +573,11 @@ namespace GTPool.Tests
                         Utils.Log("Test: can_cancel_jobs_that_have_not_been_picked - jobNumber = " + jobNumber);
                     };
 
-                    GenericThreadPool.Init<GtpAsync>(1, 2, 300);
+                    GenericThreadPool.Init(1, 2, 300);
 
                     for (var i = 0; i <= 5; i++)
                     {
-                        var managedJob = new ManagedAsyncJob(job, new object[] {i});
+                        var managedJob = new ManagedJob(job, new object[] {i});
                         managedJobs.Add(managedJob);
                         GenericThreadPool.AddJob(managedJob);
                     }
@@ -736,7 +585,7 @@ namespace GTPool.Tests
                     GenericThreadPool.CancelJob(managedJobs[3]);
                     GenericThreadPool.CancelJob(managedJobs[5]);
 
-                    GenericThreadPool.End();
+                    GenericThreadPool.Shutdown();
 
                     Assert.IsTrue(index == 3 &&
                                   executedJobs[0] + executedJobs[1] + executedJobs[2] + executedJobs[3] == 7);
@@ -766,17 +615,17 @@ namespace GTPool.Tests
                         Utils.Log("Test: can_cancel_all_jobs_that_have_not_been_picked - jobNumber = " + jobNumber);
                     };
 
-                    GenericThreadPool.Init<GtpAsync>(1, 2, 300);
+                    GenericThreadPool.Init(1, 2, 300);
 
                     for (var i = 0; i <= 5; i++)
                     {
-                        var managedJob = new ManagedAsyncJob(job, new object[] {i});
+                        var managedJob = new ManagedJob(job, new object[] {i});
                         GenericThreadPool.AddJob(managedJob);
                     }
 
                     Thread.Sleep(1000);
                     GenericThreadPool.CancellAllJobs();
-                    GenericThreadPool.End();
+                    GenericThreadPool.Shutdown();
 
                     Assert.IsTrue(index > 0 && index < 6);
                 }
@@ -904,26 +753,26 @@ namespace GTPool.Tests
                             Thread.CurrentThread.Name));
                     };
 
-                    GenericThreadPool.Init<GtpAsync>(5, 100, 5000);
+                    GenericThreadPool.Init(5, 100, 5000);
 
-                    for (var t = 0; t < cars.Count(); t++)
+                    for (var t = 0; t < cars.Length; t++)
                     {
-                        GenericThreadPool.AddJob(new ManagedAsyncJob(job, new object[] { t }));
+                        GenericThreadPool.AddJob(new ManagedJob(job, new object[] { t }));
                     }
 
                     Thread.Sleep(20000);
 
-                    for (var t = 0; t < cars.Count(); t++)
+                    for (var t = 0; t < cars.Length; t++)
                     {
                         Thread.Sleep(10);
-                        GenericThreadPool.AddJob(new ManagedAsyncJob(job, new object[] { t }));
+                        GenericThreadPool.AddJob(new ManagedJob(job, new object[] { t }));
                     }
 
-                    GenericThreadPool.End();
+                    GenericThreadPool.Shutdown();
                 }
-                catch (Exception)
+                catch (Exception ex)
                 {
-                    Assert.Inconclusive("Failed to assert.");
+                    Assert.Inconclusive("Failed to assert. Error: " + ex.Message);
                 }
                 finally
                 {

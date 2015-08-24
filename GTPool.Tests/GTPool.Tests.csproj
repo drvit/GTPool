@@ -57,6 +57,7 @@
     <Compile Include="GenericThreadPoolTests.cs" />
     <Compile Include="Sandbox\SimpleThreadTest.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="TestHelper.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />

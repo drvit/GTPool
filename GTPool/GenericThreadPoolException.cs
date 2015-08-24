@@ -40,7 +40,11 @@ namespace GTPool
         InstanceIsDisposed,
         [Description("Work must be provided when creating a managed job.")]
         MissingWork,
+        [Description("Wrong GTP Sync Id.")]
+        WrongSyncId,
         [Description("Job can't be null.")]
-        JobIsNull
+        JobIsNull,
+        [Description("WaitAll handler only supports MTA Apartments")]
+        WaitHandlerNotInMta
     }
 }

@@ -34,14 +34,14 @@ namespace GTPool
         private readonly object _queueLocker = new object();
         private readonly object _variableLocker = new object();
         private readonly object _gtpMonitorLocker = new object();
-        private readonly Queue<ManagedJob> _queueHighest = new Queue<ManagedJob>();
-        private readonly Queue<ManagedJob> _queueAboveNormal = new Queue<ManagedJob>();
-        private readonly Queue<ManagedJob> _queueNormal = new Queue<ManagedJob>();
-        private readonly Queue<ManagedJob> _queueBelowNormal = new Queue<ManagedJob>();
-        private readonly Queue<ManagedJob> _queueLowest = new Queue<ManagedJob>();
+        private readonly Queue<ManagedJobWaitHandler> _queueHighest = new Queue<ManagedJobWaitHandler>();
+        private readonly Queue<ManagedJobWaitHandler> _queueAboveNormal = new Queue<ManagedJobWaitHandler>();
+        private readonly Queue<ManagedJobWaitHandler> _queueNormal = new Queue<ManagedJobWaitHandler>();
+        private readonly Queue<ManagedJobWaitHandler> _queueBelowNormal = new Queue<ManagedJobWaitHandler>();
+        private readonly Queue<ManagedJobWaitHandler> _queueLowest = new Queue<ManagedJobWaitHandler>();
         private HashSet<int> _ignoredJobs;
-        private HashSet<string> _threadsUsed;
-        private HashSet<int> _jobsProcessed;
+        private static HashSet<string> _threadsUsed;
+        private static HashSet<int> _jobsProcessed;
         private int _threadId;
         private int _monitorFailureCount;
         private int _jobsCount;
@@ -49,8 +49,9 @@ namespace GTPool
         private bool _disposingThreads;
         private int _waitingThreadsCount;
         private bool _gtpMonitorWaiting;
-        private int _totalThreadsCreated;
-        private int _totalJobsAdded;
+        private Delegate _disposeCallback;
+        private object[] _disposeCallbackParams;
+        private Dictionary<int, IList<WaitHandle>> _waitHandlers;
 
         #endregion
 
@@ -65,102 +66,71 @@ namespace GTPool
         #region Public Properties
 
         public static GenericThreadPool Current { get { return _current; } }
-        public GenericThreadPoolSettings Settings { get; private set; }
-        public GenericThreadPoolMode GtpMode { get; private set; }
+        public static GenericThreadPoolSettings Settings { get; private set; }
 
-        public static int TotalThreadsCreated { get { return _current._totalThreadsCreated; } }
-        public static int TotalThreadsUsed { get { return _current._threadsUsed != null ? _current._threadsUsed.Count() : 0; } }
-        public static int TotalJobsAdded { get { return _current._totalJobsAdded; } }
-        public static int TotalJobsProcessed { get { return _current._jobsProcessed != null ? _current._jobsProcessed.Count() : 0; } }
+        public static bool IsInitialized { get { return Settings != null; } }
+        public static int TotalThreadsCreated { get; private set; }
+        public static int TotalThreadsUsed { get { return _threadsUsed != null ? _threadsUsed.Count : 0; } }
+        public static int TotalJobsAdded { get; private set; }
+        public static int TotalJobsProcessed { get { return _jobsProcessed != null ? _jobsProcessed.Count : 0; } }
 
         #endregion
 
         #region Initialize Generic Thread Pool
 
-        public static GenericThreadPool Init()
+        public static void Init()
         {
-            return Init<GtpAsync>(new GenericThreadPoolSettings(), null, null);
+            Init(new GenericThreadPoolSettings(), null, null);
         }
 
-        public static GenericThreadPool Init<TMode>(int numberOfThreads)
-            where TMode : GtpSync, new()
+        public static void Init(int minThreads, int maxThreads, int idleTime)
         {
-            return Init<TMode>(new GenericThreadPoolSettings(numberOfThreads), null, null);
+            Init(new GenericThreadPoolSettings(minThreads, maxThreads, idleTime), null, null);
         }
 
-        public static GenericThreadPool Init<TMode>(int numberOfThreads, Delegate disposeCallback, 
-            object[] disposeCallbackParams)
-            where TMode : GtpSync, new()
-        {
-            return Init<TMode>(new GenericThreadPoolSettings(numberOfThreads), disposeCallback, 
-                disposeCallbackParams);
-        }
-
-        public static GenericThreadPool Init<TMode>(int minThreads, int maxThreads, int idleTime)
-            where TMode : GtpAsync, new()
-        {
-            return Init<TMode>(new GenericThreadPoolSettings(minThreads, maxThreads, idleTime), null, null);
-        }
-
-        public static GenericThreadPool Init<TMode>(int minThreads, int maxThreads, int idleTime,
+        public static void Init(int minThreads, int maxThreads, int idleTime,
             Delegate disposeCallback, object[] disposeCallbackParams)
-            where TMode : GtpAsync, new()
         {
-            return Init<TMode>(new GenericThreadPoolSettings(minThreads, maxThreads, idleTime), 
+            Init(new GenericThreadPoolSettings(minThreads, maxThreads, idleTime),
                 disposeCallback, disposeCallbackParams);
         }
 
-        private static GenericThreadPool Init<TMode>(GenericThreadPoolSettings settings, 
+        private static void Init(GenericThreadPoolSettings settings,
             Delegate disposeCallback, object[] disposeCallbackParams)
-            where TMode : GenericThreadPoolMode, new()
         {
-            if (InitializeInstance<TMode>(settings, disposeCallback, disposeCallbackParams))
+            if (InitializeInstance(settings, disposeCallback, disposeCallbackParams))
             {
                 Utils.Log("###############################################");
                 Utils.Log("Generic Thread Pool Initialization");
 
-                _current.LoadThreadQueue();
-
-                if (!_current.GtpMode.WithWait)
-                    _current.CreateMonitor();
+                _current.LoadThreadQueue(settings.MinThreads);
+                _current.CreateMonitor();
             }
-
-            return _current;
         }
 
-        private static bool InitializeInstance<TMode>(GenericThreadPoolSettings settings,
+        private static bool InitializeInstance(GenericThreadPoolSettings settings,
             Delegate disposeCallback, object[] disposeCallbackParams)
-            where TMode : GenericThreadPoolMode, new()
         {
-            if (_current.Settings == null)
+            if (Settings == null)
             {
-                _current.Settings = settings;
+                Settings = settings;
                 _current.DisposingThreads = false;
                 _current.Waiting = true;
                 _current._ignoredJobs = new HashSet<int>();
                 _current._threadId = 0;
+                _current._disposeCallback = disposeCallback;
+                _current._disposeCallbackParams = disposeCallbackParams;
+                _current._waitHandlers = new Dictionary<int, IList<WaitHandle>>();
 
                 ResetTotals();
 
-                _current.GtpMode = new TMode
-                {
-                    DisposeCallback = disposeCallback,
-                    DisposeCallbackParams = disposeCallbackParams
-                };
-
                 var numProcs = Environment.ProcessorCount;
-                var concurrencyLevel = numProcs*2;
+                var concurrencyLevel = numProcs * 2;
 
                 _current._threads = new ConcurrentDictionary<string, ManagedThread>(
-                    concurrencyLevel, _current.Settings.MaxThreads);
+                    concurrencyLevel, Settings.MaxThreads);
 
                 return true;
-            }
-            
-            if (typeof (TMode) != _current.GtpMode.GetType())
-            {
-                throw new GenericThreadPoolException(
-                    GenericThreadPoolExceptionType.IncompatibleGtpMode);
             }
 
             return false;
@@ -170,10 +140,10 @@ namespace GTPool
         {
             lock (_current._variableLocker)
             {
-                _current._totalThreadsCreated = 0;
-                _current._threadsUsed = new HashSet<string>();
-                _current._totalJobsAdded = 0;
-                _current._jobsProcessed = new HashSet<int>();
+                TotalThreadsCreated = 0;
+                _threadsUsed = new HashSet<string>();
+                TotalJobsAdded = 0;
+                _jobsProcessed = new HashSet<int>();
             }
         }
 
@@ -181,22 +151,17 @@ namespace GTPool
 
         #region Handle Managed Threads
 
-        private void LoadThreadQueue()
-        {
-            LoadThreadQueue(GtpMode.WithWait ? Settings.MaxThreads : Settings.MinThreads);
-        }
-
         private void LoadThreadQueue(int numberOfThreads)
         {
             numberOfThreads = Math.Min(Settings.MaxThreads, numberOfThreads);
 
-            if (_threads.Count < numberOfThreads)
+            if (_threads.Count <= numberOfThreads)
             {
                 Utils.Log(string.Format("====== Attempting to create {0} threads ======", numberOfThreads));
 
                 while (true)
                 {
-                    if ((JobsCount == 0 && !Waiting) || (_threads.Count == numberOfThreads))
+                    if ((JobsCount == 0 && !Waiting) || (_threads.Count >= numberOfThreads))
                     {
                         break;
                     }
@@ -211,7 +176,7 @@ namespace GTPool
                     }));
 
                     _threads[threadName].Start();
-                    _totalThreadsCreated++;
+                    TotalThreadsCreated++;
 
                     Utils.Log(string.Format("<<<<< Thread {0} created >>>>>>", threadName));
                 }
@@ -224,19 +189,20 @@ namespace GTPool
 
             while (true)
             {
-                var job = DequeueJob();
+                var jobwh = DequeueJob();
 
-                if (job != null)
+                if (jobwh != null)
                 {
                     lock (_variableLocker)
                     {
                         if (!_threadsUsed.Contains(tname))
                             _threadsUsed.Add(tname);
 
-                        if (!_jobsProcessed.Contains(job.JobId))
-                            _jobsProcessed.Add(job.JobId);
+                        if (!_jobsProcessed.Contains(jobwh.Current.JobId))
+                            _jobsProcessed.Add(jobwh.Current.JobId);
                     }
-                    _threads[tname].ExecuteJob(job);
+
+                    _threads[tname].ExecuteJob(jobwh);
                 }
                 else
                 {
@@ -257,8 +223,7 @@ namespace GTPool
                         _waitingThreadsCount--;
                     }
 
-                    if (JobsCount == 0 && (DisposingThreads || 
-                        (!GtpMode.WithWait && _threads.Count > Settings.MinThreads)))
+                    if (JobsCount == 0 && (DisposingThreads || _threads.Count > Settings.MinThreads))
                     {
                         break;
                     }
@@ -271,47 +236,84 @@ namespace GTPool
             Utils.Log(">>>>>> Thread destroyed <<<<<<");
         }
 
+        public static void WaitAllJobs(int groupedById)
+        {
+            WaitAllJobs(groupedById, false);
+        }
+
+        private static void WaitAllJobs(int groupedById, bool silently)
+        {
+            if (Thread.CurrentThread.GetApartmentState() != ApartmentState.MTA)
+            {
+                if (silently)
+                    return;
+
+                throw new GenericThreadPoolException(GenericThreadPoolExceptionType.WaitHandlerNotInMta);
+            }
+
+            IList<WaitHandle> groupedJobsHandlers;
+
+            if (_current._waitHandlers.TryGetValue(groupedById, out groupedJobsHandlers)
+                && groupedJobsHandlers != null)
+            {
+                var waitHandlers = new WaitHandle[groupedJobsHandlers.Count];
+
+                var i = 0;
+                foreach (var ev in groupedJobsHandlers)
+                {
+                    waitHandlers[i] = ev;
+                    i++;
+                }
+
+                Utils.Log(string.Format("?????? Waiting all jobs grouped by id {0} to finish", groupedById));
+                WaitHandle.WaitAll(waitHandlers, 30000);
+                Utils.Log(string.Format("?????? Waiting all jobs grouped by id {0} have finished", groupedById));
+
+                _current._waitHandlers.Remove(groupedById);
+            }
+        }
+
         #endregion
 
         #region Enqueue Managed Job
 
-        public static void AddJob(ManagedAsyncJob job)
+        public static void AddJob(ManagedJob job)
         {
-            ValidateAsyncJob(job);
-
-            _current.AddJobToPriorityQueue(job);
+            AddJob(job, -1);
         }
 
-        public void AddJob(ManagedSyncJob job)
+        public static void AddJob(ManagedJob job, int groupById)
         {
-            ValidateSyncJob(job);
+            ValidateJob(job);
 
-            AddJobToPriorityQueue(job);
+            var jobwh = new ManagedJobWaitHandler(job, groupById);
+
+            _current.AddJobToPriorityQueue(jobwh);
         }
 
-        private void AddJobToPriorityQueue(ManagedJob job)
+        private void AddJobToPriorityQueue(ManagedJobWaitHandler jobwh)
         {
-            switch (job.ThreadPriority)
+            switch (jobwh.Current.ThreadPriority)
             {
                 case ThreadPriority.Highest:
-                    EnqueueJob(_queueHighest, job);
+                    EnqueueJob(_queueHighest, jobwh);
                     break;
                 case ThreadPriority.AboveNormal:
-                    EnqueueJob(_queueAboveNormal, job);
+                    EnqueueJob(_queueAboveNormal, jobwh);
                     break;
                 case ThreadPriority.BelowNormal:
-                    EnqueueJob(_queueBelowNormal, job);
+                    EnqueueJob(_queueBelowNormal, jobwh);
                     break;
                 case ThreadPriority.Lowest:
-                    EnqueueJob(_queueLowest, job);
+                    EnqueueJob(_queueLowest, jobwh);
                     break;
                 default:
-                    EnqueueJob(_queueNormal, job);
+                    EnqueueJob(_queueNormal, jobwh);
                     break;
             }
         }
 
-        private void EnqueueJob(Queue<ManagedJob> queue, ManagedJob job)
+        private void EnqueueJob(Queue<ManagedJobWaitHandler> queue, ManagedJobWaitHandler jobwh)
         {
             CheckGtpMonitorIsRunning();
 
@@ -319,18 +321,28 @@ namespace GTPool
             {
                 lock (_variableLocker)
                 {
-                    _totalJobsAdded++;
+                    TotalJobsAdded++;
                     _jobsCount++;
+
+                    if (jobwh.JobWaitHandle != null)
+                    {
+                        if (!_waitHandlers.ContainsKey(jobwh.GroupById))
+                        {
+                            _waitHandlers = new Dictionary<int, IList<WaitHandle>>
+                            {
+                                {jobwh.GroupById, new List<WaitHandle>()}
+                            };
+                        }
+
+                        _waitHandlers[jobwh.GroupById].Add(jobwh.JobWaitHandle.WaitHandle);
+                    }
                 }
 
-                queue.Enqueue(job);
-                Utils.Log(string.Format("++++++ Job added to GTP JobId: {0} ++++++", job.JobId));
+                queue.Enqueue(jobwh);
+                Utils.Log(string.Format("++++++ Job added to GTP JobId: {0} ++++++", jobwh.Current.JobId));
 
-                if (!GtpMode.WithWait)
-                {
-                    Waiting = false;
-                    Monitor.Pulse(_queueLocker);
-                }
+                Waiting = false;
+                Monitor.Pulse(_queueLocker);
             }
         }
 
@@ -338,44 +350,44 @@ namespace GTPool
 
         #region Dequeue Managed Job
 
-        private ManagedJob DequeueJob()
+        private ManagedJobWaitHandler DequeueJob()
         {
             if (!Waiting)
             {
                 lock (_queueLocker)
                 {
-                    ManagedJob job = null;
+                    ManagedJobWaitHandler jobwh = null;
 
                     if (_queueHighest.Any())
-                        job = _queueHighest.Dequeue();
+                        jobwh = _queueHighest.Dequeue();
 
                     else if (_queueAboveNormal.Any())
-                        job = _queueAboveNormal.Dequeue();
+                        jobwh = _queueAboveNormal.Dequeue();
 
                     else if (_queueNormal.Any())
-                        job = _queueNormal.Dequeue();
+                        jobwh = _queueNormal.Dequeue();
 
                     else if (_queueBelowNormal.Any())
-                        job = _queueBelowNormal.Dequeue();
+                        jobwh = _queueBelowNormal.Dequeue();
 
                     else if (_queueLowest.Any())
-                        job = _queueLowest.Dequeue();
+                        jobwh = _queueLowest.Dequeue();
 
-                    if (job != null)
+                    if (jobwh != null)
                     {
                         lock (_variableLocker)
                         {
                             _jobsCount--;
                         }
 
-                        if (_ignoredJobs.Contains(job.JobId))
+                        if (_ignoredJobs.Contains(jobwh.Current.JobId))
                         {
-                            _ignoredJobs.Remove(job.JobId);
-                            Utils.Log(string.Format("------ Ignored Job {0} ------", job.JobId));
+                            _ignoredJobs.Remove(jobwh.Current.JobId);
+                            Utils.Log(string.Format("------ Ignored Job {0} ------", jobwh.Current.JobId));
                             return null;
                         }
 
-                        return job;
+                        return jobwh;
                     }
 
                     _ignoredJobs.Clear();
@@ -391,30 +403,36 @@ namespace GTPool
 
         private void CreateMonitor()
         {
-            AddJobToPriorityQueue(new ManagedAsyncJob((Action)GtpMonitor, null, null, null, ex =>
+            var gtpMonitorThread = new Thread(new ThreadStart((Action) (() =>
             {
-                Utils.Log(string.Format("GenericThreadPool Thread Monitor failed with exception: {0}", ex.Message));
-
-                if (_monitorFailureCount > 1)
+                try
                 {
-                    Dispose();
-                    return;
+                    GtpMonitor();
                 }
+                catch (Exception ex)
+                {
+                    Utils.Log(string.Format("GenericThreadPool Thread Monitor failed with exception: {0}", ex.Message));
 
-                _monitorFailureCount++;
-                Utils.Log(string.Format("GenericThreadPool will attempt to restart the GTP Thread Monitor ({0}/2)...",
-                    _monitorFailureCount));
+                    if (_monitorFailureCount > 1)
+                    {
+                        Shutdown();
+                        return;
+                    }
 
-                CreateMonitor();
+                    _monitorFailureCount++;
+                    Utils.Log(string.Format("GenericThreadPool will attempt to restart the GTP Thread Monitor ({0}/2)...",
+                        _monitorFailureCount));
 
-            }, ThreadPriority.Normal, true));
+                    CreateMonitor();
+                }
+            })));
+
+            gtpMonitorThread.Name = "__thread_gtpMonitor__";
+            gtpMonitorThread.Start();
         }
 
         private void CheckGtpMonitorIsRunning()
         {
-            if (GtpMode.WithWait)
-                return;
-
             if (!_gtpMonitorWaiting)
                 return;
 
@@ -467,9 +485,9 @@ namespace GTPool
 
         #region Cancel Managed Jobs
 
-        public static void CancelJob(ManagedAsyncJob job)
+        public static void CancelJob(ManagedJob job)
         {
-            ValidateAsyncJob(job);
+            ValidateJob(job);
 
             if (job.JobId <= 0)
                 return;
@@ -584,78 +602,46 @@ namespace GTPool
 
         #region Managed Job Validation
 
-        private static void ValidateAsyncJob(ManagedAsyncJob job)
+        private static void ValidateJob(ManagedJob job)
         {
             if (job == null)
                 throw new GenericThreadPoolException(
                     GenericThreadPoolExceptionType.JobIsNull);
 
-            if (_current == null)
-                throw new GenericThreadPoolException(
-                    GenericThreadPoolExceptionType.InstanceIsDisposed);
-
-            if (_current.GtpMode.WithWait != job.GtpMode.WithWait)
-                throw new GenericThreadPoolException(
-                    GenericThreadPoolExceptionType.IncompatibleGtpMode);
-
-            if (_current.Settings == null)
+            if (Settings == null)
                 throw new GenericThreadPoolException(
                     GenericThreadPoolExceptionType.SettingsNotInitialized);
         }
-
-        private void ValidateSyncJob(ManagedSyncJob job)
-        {
-            if (job == null)
-                throw new GenericThreadPoolException(
-                    GenericThreadPoolExceptionType.JobIsNull);
-
-            if (GtpMode.WithWait != job.GtpMode.WithWait)
-                throw new GenericThreadPoolException(
-                    GenericThreadPoolExceptionType.IncompatibleGtpMode);
-        }
-
+        
         #endregion
 
         #region IDisposable
 
-        public static void End()
-        {
-            End(false);
-        }
-
-        public static void End(bool silently)
-        {
-            if (!silently && _current.GtpMode.WithWait)
-                throw new GenericThreadPoolException(
-                    GenericThreadPoolExceptionType.IncompatibleGtpMode);
-
-            _current.InternalDispose(silently);
-        }
-
         public void Dispose()
         {
-            Dispose(false);
+            Shutdown(false);
         }
 
-        public void Dispose(bool silently)
+        public static void Shutdown()
         {
-            if (!silently && !GtpMode.WithWait)
-                throw new GenericThreadPoolException(
-                    GenericThreadPoolExceptionType.IncompatibleGtpMode);
+            Shutdown(false);
+        }
 
-            InternalDispose(silently);
+        public static void Shutdown(bool silently)
+        {
+            _current.InternalDispose(silently);
         }
 
         private void InternalDispose(bool silently = false)
         {
             Utils.Log("...... Disposing ......");
 
-            if (GtpMode == null || Settings == null)
+            if (Settings == null)
             {
                 if (!silently)
                 {
                     throw new GenericThreadPoolException(
-                        GenericThreadPoolExceptionType.SettingsNotInitialized);
+                        GenericThreadPoolExceptionType.InstanceIsDisposed);
                 }
 
                 ResetTotals();
@@ -675,18 +661,23 @@ namespace GTPool
                     }
                 }
 
+                foreach (var ev in _waitHandlers)
+                {
+                    WaitAllJobs(ev.Key, true);
+                }
+
                 while (_threads.Count > 0 || JobsCount > 0)
                 {
                     Thread.Sleep(1);
                 }
 
-                GtpMode.InvokeDisposeCallback();
+                if (_disposeCallback != null)
+                    _disposeCallback.DynamicInvoke(_disposeCallbackParams);
             }
 
-            Settings = null;
-            GtpMode = null;
             _ignoredJobs = null;
             _threads = null;
+            Settings = null;
 
             Utils.Log("Generic Thread Pool Disposed");
             Utils.Log(string.Format("Summary: {0} Threads Created; {1} Threads Consummed; {2} Jobs Added; {3} Jobs Processed;",

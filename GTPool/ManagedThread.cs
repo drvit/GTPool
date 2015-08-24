@@ -54,10 +54,10 @@ namespace GTPool
             }
         }
 
-        public void ExecuteJob(ManagedJob job)
+        public void ExecuteJob(ManagedJobWaitHandler job)
         {
-            _instance.IsBackground = job.IsBackground;
-            _instance.Priority = job.ThreadPriority;
+            _instance.IsBackground = job.Current.IsBackground;
+            _instance.Priority = job.Current.ThreadPriority;
 
             job.DoWork();
 
