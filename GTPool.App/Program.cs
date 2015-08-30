@@ -11,10 +11,11 @@ namespace GTPool.App
 {
     class Program
     {
-        static int _minThreads = 2;
-        static int _maxThreads = 2;
+        static int _minThreads = 1;
+        static int _maxThreads = 25;
         static int _idleTime = 100;
         
+        [MTAThread]
         private static void Main(string[] args)
         {
             if (args.Length <= 0)
@@ -23,7 +24,7 @@ namespace GTPool.App
                 var pg = Console.ReadLine();
 
                 if (pg != null && 
-                    (pg.StartsWith("/FGTP ") || pg.StartsWith("/BM ") || pg.StartsWith("/EX ")))
+                    (pg.StartsWith("/FGTP ") || pg.StartsWith("/BM ") || pg.StartsWith("/EX")))
                 {
                     args = pg.Split(' ');
                 }
@@ -57,6 +58,7 @@ namespace GTPool.App
 
                 if (args.Length > 0 && args[0].Equals("/EX"))
                 {
+                    Utils.StartLogging();
                     RunExercises.WhatExercise();
                 }
 
@@ -149,7 +151,7 @@ namespace GTPool.App
 
         private static void ApplicationStart(string[] args)
         {
-            Utils.StopLogging();
+            //Utils.StopLogging();
 
             if (args.Length > 0)
             {
@@ -157,7 +159,15 @@ namespace GTPool.App
                 TryGetIntArg(args, "TA", ref _maxThreads);
                 TryGetIntArg(args, "TT", ref _idleTime);
 
-                GTP.Init(_minThreads, _maxThreads, _idleTime);
+                GTP.Init(minThreads: _minThreads, 
+                    maxThreads: _maxThreads, 
+                    idleTime: _idleTime, 
+                    disposeCallback: (Action) (() =>
+                    {
+                        Console.WriteLine("Summary: {0} Threads Created; {1} Threads Consumed; {2} Jobs Added; {3} Jobs Processed;",
+                            GTP.TotalThreadsCreated, GTP.TotalThreadsUsed, GTP.TotalJobsAdded, GTP.TotalJobsProcessed);  
+                    }), 
+                    disposeCallbackParams: null);
             }
         }
 

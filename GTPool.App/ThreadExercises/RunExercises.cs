@@ -17,7 +17,7 @@ namespace GTPool.App.ThreadExercises
             {
                 Console.Clear();
 
-                Console.Write("What exercise to Run? [1, 2, 3, 4, 5, 6, 7, 71, 8, 9, 91, 10, 11, 12]: ");
+                Console.Write("What exercise to Run? [1, 2, 3, 4, 5, 6, 7, 71, 8, 9, 91, 10, 11, 12, 13, 14]: ");
                 var exercise = Console.ReadLine();
                 int n;
 
@@ -66,6 +66,12 @@ namespace GTPool.App.ThreadExercises
                             break;
                         case 12:
                             Exercise12.Run();
+                            break;
+                        case 13:
+                            Exercise13.Run();
+                            break;
+                        case 14:
+                            Exercise14.Run();
                             break;
                         default:
                             Console.WriteLine("Wrong exercise number!");

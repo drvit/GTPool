@@ -21,13 +21,7 @@ namespace GTPool
 
         public static void Log(string message)
         {
-            if (IsDebug)
-            {
-                if (!_stopLogger)
-                {
-                    Log(message, false);
-                }
-            }
+            Log(message, false);
         }
 
         public static void Log(string message, bool forceLogging)
@@ -45,9 +39,9 @@ namespace GTPool
                         thread.Name ?? threadId.PadLeft(16 - threadId.Length, ' '),
                         message);
 
-#if DEBUG
-                    Trace.WriteLine(logMessage);
-#endif
+//#if DEBUG
+//                    Trace.WriteLine(logMessage);
+//#endif
                     AddLogMessage(logMessage);
                     StartLogger();
                 }

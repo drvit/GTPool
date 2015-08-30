@@ -5,7 +5,11 @@ namespace GTPool
 {
     public class ManagedJobWaitHandler
     {
-        public ManagedJobWaitHandler(ManagedJob job, int groupById = -1)
+        public ManagedJobWaitHandler(IManagedJob job)
+            : this(job, -1)
+        { }
+
+        public ManagedJobWaitHandler(IManagedJob job, int groupById)
         {
             Current = job;
             GroupById = groupById;
@@ -14,7 +18,7 @@ namespace GTPool
                 JobWaitHandle = new ManualResetEventSlim(false);
         }
 
-        public ManagedJob Current { get; set; }
+        public IManagedJob Current { get; set; }
 
         public int GroupById { get; set; }
 

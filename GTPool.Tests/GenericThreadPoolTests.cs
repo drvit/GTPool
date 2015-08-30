@@ -180,7 +180,7 @@ namespace GTPool.Tests
 
                 try
                 {
-                    GenericThreadPool.Init(1, 3, 100);
+                    GenericThreadPool.Init(minThreads: 3, maxThreads: 20, idleTime: 1000);
 
                     Action<bool> job = ret =>
                     {
@@ -410,7 +410,7 @@ namespace GTPool.Tests
                 LogTestRunning();
 
                 var onErrorWasExecuted = true;
-                const string exceptionMessge = "Exception from can_cancel_all_jobs_that_have_not_been_picked";
+                const string exceptionMessge = "Exception from added_job_with_exception_handling_method_is_handled_by_onerror_callback";
 
                 GenericThreadPool.Init(1, 4, 500);
                 for (var i = 0; i < 10; i++)
@@ -419,12 +419,12 @@ namespace GTPool.Tests
                         (Action<int>) (index =>
                         {
                             Utils.Log(
-                                "Test: can_cancel_all_jobs_that_have_not_been_picked - WORK Method - index = " +
+                                "Test: added_job_with_exception_handling_method_is_handled_by_onerror_callback - WORK Method - index = " +
                                 index);
                             if (index == 6)
                             {
                                 Utils.Log(
-                                    "Test: can_cancel_all_jobs_that_have_not_been_picked - Throw Exception - index = " +
+                                    "Test: added_job_with_exception_handling_method_is_handled_by_onerror_callback - Throw Exception - index = " +
                                     index);
                                 throw new Exception(exceptionMessge);
                             }
@@ -443,12 +443,12 @@ namespace GTPool.Tests
 
             [TestMethod]
             [TestCategory("GenericThreadPool")]
-            public void added_job_with_exception_handling_method_is_handled_by_onerror_calback()
+            public void added_jobs_callbacks_exception_is_handled_by_onerror_callback()
             {
                 LogTestRunning();
 
                 var onErrorWasExecuted = true;
-                const string exceptionMessge = "Exception from jobs_callbacks_exception_is_handled_by_onerror_calback";
+                const string exceptionMessge = "Exception from added_jobs_callbacks_exception_is_handled_by_onerror_callback";
 
                 GenericThreadPool.Init(1, 3, 500);
                 for (var i = 0; i < 10; i++)
@@ -457,7 +457,7 @@ namespace GTPool.Tests
                         (Func<int, int>) (index =>
                         {
                             Utils.Log(
-                                "Test: jobs_callbacks_exception_is_handled_by_onerror_calback - WORK Method - index = " +
+                                "Test: added_jobs_callbacks_exception_is_handled_by_onerror_callback - WORK Method - index = " +
                                 index);
                             return index;
                         }),
@@ -465,12 +465,12 @@ namespace GTPool.Tests
                         (Action<int>) (index =>
                         {
                             Utils.Log(
-                                "Test: jobs_callbacks_exception_is_handled_by_onerror_calback - CALLBACK Method - index = " +
+                                "Test: added_jobs_callbacks_exception_is_handled_by_onerror_callback - CALLBACK Method - index = " +
                                 index);
                             if (index == 7)
                             {
                                 Utils.Log(
-                                    "Test: jobs_callbacks_exception_is_handled_by_onerror_calback - CALLBACK Method - Throw Exception - index = " +
+                                    "Test: added_jobs_callbacks_exception_is_handled_by_onerror_callback - CALLBACK Method - Throw Exception - index = " +
                                     index);
                                 throw new Exception(exceptionMessge);
                             }

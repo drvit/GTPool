@@ -83,6 +83,11 @@ namespace GTPool
             Init(new GenericThreadPoolSettings(), null, null);
         }
 
+        public static void Init(int minThreads, int maxThreads)
+        {
+            Init(new GenericThreadPoolSettings(minThreads, maxThreads), null, null);
+        }
+
         public static void Init(int minThreads, int maxThreads, int idleTime)
         {
             Init(new GenericThreadPoolSettings(minThreads, maxThreads, idleTime), null, null);
@@ -103,7 +108,7 @@ namespace GTPool
                 Utils.Log("###############################################");
                 Utils.Log("Generic Thread Pool Initialization");
 
-                _current.LoadThreadQueue(settings.MinThreads);
+                _current.LoadThreadPool(settings.MinThreads);
                 _current.CreateMonitor();
             }
         }
@@ -151,24 +156,19 @@ namespace GTPool
 
         #region Handle Managed Threads
 
-        private void LoadThreadQueue(int numberOfThreads)
+        private void LoadThreadPool(int numberOfThreads)
         {
             numberOfThreads = Math.Min(Settings.MaxThreads, numberOfThreads);
 
-            if (_threads.Count <= numberOfThreads)
+            if (_threads.Count < numberOfThreads)
             {
                 Utils.Log(string.Format("====== Attempting to create {0} threads ======", numberOfThreads));
 
-                while (true)
+                while (_threads.Count < numberOfThreads && (JobsCount > 0 || Waiting))
                 {
-                    if ((JobsCount == 0 && !Waiting) || (_threads.Count >= numberOfThreads))
-                    {
-                        break;
-                    }
-
                     var threadName = NextThreadName;
 
-                    _threads.TryAdd(threadName, new ManagedThread(new Thread(JobInvoker)
+                    _threads.TryAdd(threadName, new ManagedThread(new Thread(Consumer)
                     {
                         Name = threadName,
                         IsBackground = true,
@@ -183,7 +183,7 @@ namespace GTPool
             }
         }
 
-        private void JobInvoker()
+        private void Consumer()
         {
             var tname = CurrentThreadName;
 
@@ -212,8 +212,8 @@ namespace GTPool
                     }
 
                     Utils.Log("Thread going to sleep");
-                    
-                    _threads[CurrentThreadName].Wait(_queueLocker, Settings.IdleTime, 
+
+                    _threads[tname].Wait(_queueLocker, Settings.IdleTime, 
                         Waiting && _threads.Count <= Settings.MinThreads);
 
                     Utils.Log("Thread woke up");
@@ -256,20 +256,12 @@ namespace GTPool
             if (_current._waitHandlers.TryGetValue(groupedById, out groupedJobsHandlers)
                 && groupedJobsHandlers != null)
             {
-                var waitHandlers = new WaitHandle[groupedJobsHandlers.Count];
-
-                var i = 0;
-                foreach (var ev in groupedJobsHandlers)
-                {
-                    waitHandlers[i] = ev;
-                    i++;
-                }
-
                 Utils.Log(string.Format("?????? Waiting all jobs grouped by id {0} to finish", groupedById));
-                WaitHandle.WaitAll(waitHandlers, 30000);
-                Utils.Log(string.Format("?????? Waiting all jobs grouped by id {0} have finished", groupedById));
 
+                WaitHandle.WaitAll(groupedJobsHandlers.ToArray(), 30000);
                 _current._waitHandlers.Remove(groupedById);
+
+                Utils.Log(string.Format("!!!!!! Waiting all jobs grouped by id {0} have finished", groupedById));
             }
         }
 
@@ -277,12 +269,12 @@ namespace GTPool
 
         #region Enqueue Managed Job
 
-        public static void AddJob(ManagedJob job)
+        public static void AddJob(IManagedJob job)
         {
             AddJob(job, -1);
         }
 
-        public static void AddJob(ManagedJob job, int groupById)
+        public static void AddJob(IManagedJob job, int groupById)
         {
             ValidateJob(job);
 
@@ -293,24 +285,28 @@ namespace GTPool
 
         private void AddJobToPriorityQueue(ManagedJobWaitHandler jobwh)
         {
+            Queue<ManagedJobWaitHandler> queue;
+
             switch (jobwh.Current.ThreadPriority)
             {
                 case ThreadPriority.Highest:
-                    EnqueueJob(_queueHighest, jobwh);
+                    queue = _queueHighest;
                     break;
                 case ThreadPriority.AboveNormal:
-                    EnqueueJob(_queueAboveNormal, jobwh);
+                    queue = _queueAboveNormal;
                     break;
                 case ThreadPriority.BelowNormal:
-                    EnqueueJob(_queueBelowNormal, jobwh);
+                    queue = _queueBelowNormal;
                     break;
                 case ThreadPriority.Lowest:
-                    EnqueueJob(_queueLowest, jobwh);
+                    queue = _queueLowest;
                     break;
                 default:
-                    EnqueueJob(_queueNormal, jobwh);
+                    queue = _queueNormal;
                     break;
             }
+
+            EnqueueJob(queue, jobwh);
         }
 
         private void EnqueueJob(Queue<ManagedJobWaitHandler> queue, ManagedJobWaitHandler jobwh)
@@ -356,22 +352,7 @@ namespace GTPool
             {
                 lock (_queueLocker)
                 {
-                    ManagedJobWaitHandler jobwh = null;
-
-                    if (_queueHighest.Any())
-                        jobwh = _queueHighest.Dequeue();
-
-                    else if (_queueAboveNormal.Any())
-                        jobwh = _queueAboveNormal.Dequeue();
-
-                    else if (_queueNormal.Any())
-                        jobwh = _queueNormal.Dequeue();
-
-                    else if (_queueBelowNormal.Any())
-                        jobwh = _queueBelowNormal.Dequeue();
-
-                    else if (_queueLowest.Any())
-                        jobwh = _queueLowest.Dequeue();
+                    var jobwh = DequeueJobWithHighestPriority();
 
                     if (jobwh != null)
                     {
@@ -397,8 +378,29 @@ namespace GTPool
             return null;
         }
 
+        private ManagedJobWaitHandler DequeueJobWithHighestPriority()
+        {
+            ManagedJobWaitHandler jobwh = null;
+            if (_queueHighest.Any())
+                jobwh = _queueHighest.Dequeue();
+
+            else if (_queueAboveNormal.Any())
+                jobwh = _queueAboveNormal.Dequeue();
+
+            else if (_queueNormal.Any())
+                jobwh = _queueNormal.Dequeue();
+
+            else if (_queueBelowNormal.Any())
+                jobwh = _queueBelowNormal.Dequeue();
+
+            else if (_queueLowest.Any())
+                jobwh = _queueLowest.Dequeue();
+
+            return jobwh;
+        }
+
         #endregion
-        
+
         #region GTP Thread Monitor
 
         private void CreateMonitor()
@@ -420,8 +422,7 @@ namespace GTPool
                     }
 
                     _monitorFailureCount++;
-                    Utils.Log(string.Format("GenericThreadPool will attempt to restart the GTP Thread Monitor ({0}/2)...",
-                        _monitorFailureCount));
+                    Utils.Log(string.Format("GenericThreadPool will attempt to restart the GTP Thread Monitor ({0}/2)...", _monitorFailureCount));
 
                     CreateMonitor();
                 }
@@ -458,13 +459,13 @@ namespace GTPool
                     {
                         lock (_queueLocker)
                         {
-                            Monitor.PulseAll(_queueLocker);
-                            Utils.Log("(((((( PulseAll ))))))");
+                            Monitor.Pulse(_queueLocker);
+                            Utils.Log("(((((( Pulse ))))))");
                         }
                     }
                     else
                     {
-                        LoadThreadQueue(JobsCount);
+                        LoadThreadPool(JobsCount);
                     }
                 }
                 else
@@ -485,7 +486,7 @@ namespace GTPool
 
         #region Cancel Managed Jobs
 
-        public static void CancelJob(ManagedJob job)
+        public static void CancelJob(IManagedJob job)
         {
             ValidateJob(job);
 
@@ -515,7 +516,7 @@ namespace GTPool
         #endregion
 
         #region Private Properties
-        
+
         private static string CurrentThreadName
         {
             get { return Thread.CurrentThread.Name ?? string.Empty; }
@@ -602,17 +603,15 @@ namespace GTPool
 
         #region Managed Job Validation
 
-        private static void ValidateJob(ManagedJob job)
+        private static void ValidateJob(IManagedJob job)
         {
             if (job == null)
-                throw new GenericThreadPoolException(
-                    GenericThreadPoolExceptionType.JobIsNull);
+                throw new GenericThreadPoolException(GenericThreadPoolExceptionType.JobIsNull);
 
             if (Settings == null)
-                throw new GenericThreadPoolException(
-                    GenericThreadPoolExceptionType.SettingsNotInitialized);
+                throw new GenericThreadPoolException(GenericThreadPoolExceptionType.SettingsNotInitialized);
         }
-        
+
         #endregion
 
         #region IDisposable
@@ -640,8 +639,7 @@ namespace GTPool
             {
                 if (!silently)
                 {
-                    throw new GenericThreadPoolException(
-                        GenericThreadPoolExceptionType.InstanceIsDisposed);
+                    throw new GenericThreadPoolException(GenericThreadPoolExceptionType.InstanceIsDisposed);
                 }
 
                 ResetTotals();
@@ -680,8 +678,7 @@ namespace GTPool
             Settings = null;
 
             Utils.Log("Generic Thread Pool Disposed");
-            Utils.Log(string.Format("Summary: {0} Threads Created; {1} Threads Consummed; {2} Jobs Added; {3} Jobs Processed;",
-                TotalThreadsCreated, TotalThreadsUsed, TotalJobsAdded, TotalJobsProcessed));
+            Utils.Log(string.Format("Summary: {0} Threads Created; {1} Threads Consumed; {2} Jobs Added; {3} Jobs Processed;", TotalThreadsCreated, TotalThreadsUsed, TotalJobsAdded, TotalJobsProcessed));
             Utils.Log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         }
 

@@ -46,7 +46,10 @@
     <Compile Include="CalculateFibonacciSt.cs" />
     <Compile Include="Fibonacci.cs" />
     <Compile Include="CalculateFibonacciDnTp.cs" />
+    <Compile Include="Sandbox\MoreTestClasses.cs" />
     <Compile Include="ThreadExercises\Exercise11.cs" />
+    <Compile Include="ThreadExercises\Exercise13.cs" />
+    <Compile Include="ThreadExercises\Exercise14.cs" />
     <Compile Include="ThreadExercises\Exercise6.cs" />
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

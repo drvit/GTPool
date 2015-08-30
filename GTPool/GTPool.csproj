@@ -42,8 +42,8 @@
     <Compile Include="Extensions.cs" />
     <Compile Include="GenericThreadPool.cs" />
     <Compile Include="GenericThreadPoolException.cs" />
-    <Compile Include="GenericThreadPoolMode.cs" />
     <Compile Include="GenericThreadPoolSettings.cs" />
+    <Compile Include="IManagedJob.cs" />
     <Compile Include="ManagedJob.cs" />
     <Compile Include="ManagedJobWaitHandler.cs" />
     <Compile Include="ManagedThread.cs" />

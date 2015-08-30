@@ -3,8 +3,10 @@ using System.Threading;
 
 namespace GTPool
 {
-    public class ManagedJob
+    public class ManagedJob : IManagedJob
     {
+        #region Constructors
+
         public ManagedJob(Delegate work)
             : this(work, null, null, null, null)
         { }
@@ -59,9 +61,15 @@ namespace GTPool
             _onError = onError;
         }
 
+        #endregion
+
+        #region Private variables
+
         private readonly ManagedJobDelegate _work;
         private readonly ManagedJobDelegate _callback;
         private readonly Action<GenericThreadPoolException> _onError;
+
+        #endregion
 
         public int JobId { get; private set; }
 
@@ -98,22 +106,7 @@ namespace GTPool
             {
                 if (_callback != null)
                 {
-                    if (result != null)
-                    {
-                        if (_callback.Parameters == null)
-                        {
-                            _callback.Parameters = new[] {result};
-                        }
-                        else
-                        {
-                            var cbparams = _callback.Parameters;
-
-                            Array.Resize(ref cbparams, cbparams.Length + 1);
-                            cbparams[cbparams.Length - 1] = result;
-
-                            _callback.Parameters = cbparams;
-                        }
-                    }
+                    _callback.Parameters = AddParameter(result, _callback.Parameters);
 
                     try
                     {
@@ -137,31 +130,51 @@ namespace GTPool
 
             Utils.Log("Thread Finished Working");
         }
+
+        private static object[] AddParameter(object param, object[] parameters)
+        {
+            if (param != null)
+            {
+                if (parameters == null)
+                {
+                    return new[] { param };
+                }
+
+                var cbparams = parameters;
+
+                Array.Resize(ref cbparams, cbparams.Length + 1);
+                cbparams[cbparams.Length - 1] = param;
+
+                return cbparams;
+            }
+
+            return null;
+        }
     }
 
     internal class ManagedJobDelegate
     {
-        internal ManagedJobDelegate(Delegate jobDelegate)
-            : this(jobDelegate, null)
+        internal ManagedJobDelegate(Delegate target)
+            : this(target, null)
         { }
 
-        internal ManagedJobDelegate(Delegate jobDelegate, object[] parameters)
+        internal ManagedJobDelegate(Delegate target, object[] parameters)
         {
-            JobDelegate = jobDelegate;
+            Target = target;
             Parameters = parameters;
         }
 
-        internal Delegate JobDelegate { get; private set; }
+        internal Delegate Target { get; private set; }
         internal object[] Parameters { get; set; }
 
         internal object Invoke(Action<GenericThreadPoolException> onError, string errorMessage)
         {
-            if (JobDelegate == null)
+            if (Target == null)
                 return null;
 
             try
             {
-                return JobDelegate.DynamicInvoke(Parameters);
+                return Target.DynamicInvoke(Parameters);
             }
             catch (Exception ex)
             {
