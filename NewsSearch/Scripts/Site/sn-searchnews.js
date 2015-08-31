@@ -30,6 +30,7 @@
         // the ajax loader is removed...
         if (secTimeOut == null) {
             secTimeOut = setTimeout(function () {
+                sn.options.stopLazyLoading = true;
                 sn._onLazyLoadFail(placeholder, secTimeOut);
             }, 45000);
         }
@@ -50,7 +51,7 @@
                 hiddenData.fadeIn(1000);
             }
             else {
-                if (attempts < 60) {
+                if (!sn.options.stopLazyLoading && attempts < sn.options.lazyLoadingAttempts) {
                     attempts++;
                     setTimeout(function () { sn._lazyLoadContent(url, queryString, placeholder, attempts, secTimeOut); }, 1000);
                 } else {
@@ -71,7 +72,9 @@
     };
 
     sn.options = {
-        sourceResultUrl: null
+        sourceResultUrl: null,
+        stopLazyLoading: false,
+        lazyLoadingAttempts: 60
     };
 
     sn.init = function(options) {

@@ -76,31 +76,39 @@ namespace NewsSearch.Controllers
         [HttpGet]
         public PartialViewResult GetSourceResult(int id)
         {
-            if (Session != null)
+            try
             {
-                var token = Session.SessionID;
-                if (!string.IsNullOrEmpty(token))
+                if (Session != null)
                 {
-                    var source = GlobalCache.Get(token, id.ToString());
-                    if (source != null)
+                    var token = Session.SessionID;
+                    if (!string.IsNullOrEmpty(token))
                     {
-                        var src = (ISearch) source;
-                        if (src.SearchStatus == EnumSearchStatus.Completed 
-                            && src.Results != null && src.Results.Any())
+                        var source = GlobalCache.Get(token, id.ToString());
+                        if (source != null)
                         {
-                            GlobalCache.Remove(token, id.ToString());
-
-                            if ((EnumSources) id == EnumSources.Wikipedia)
+                            var src = (ISearch) source;
+                            if (src.SearchStatus == EnumSearchStatus.Completed
+                                && src.Results != null && src.Results.Any())
                             {
-                                return PartialView("_WikipediaResult", (ISearch) source);
+                                GlobalCache.Remove(token, id.ToString());
+
+                                if ((EnumSources) id == EnumSources.Wikipedia)
+                                {
+                                    return PartialView("_WikipediaResult", (ISearch) source);
+                                }
+
+                                return PartialView("_SourceResult", (ISearch) source);
                             }
 
-                            return PartialView("_SourceResult", (ISearch) source);
+                            return PartialView("_NoResults");
                         }
-
-                        return PartialView("_NoResults");
                     }
                 }
+            }
+            catch (Exception ex)
+            {
+                Utils.Log("GetSourceResult Exception: " + ex.Message + " inner: " +
+                          (ex.InnerException != null ? ex.InnerException.Message : ""));
             }
 
             return null;

@@ -21,12 +21,18 @@ namespace NewsSearch
             RouteConfig.RegisterRoutes(RouteTable.Routes);
             BundleConfig.RegisterBundles(BundleTable.Bundles);
 
-            GTP.Init(1, 1, 500);
+            GTP.Init();
         }
 
         protected void Application_End()
         {
             GTP.Shutdown();
+        }
+
+        protected void Session_Start(object sender, EventArgs e)
+        {
+            // To fix an issue with creating a new session for every request
+            Session["init"] = 0;
         }
 
         //protected void Application_Error(object sender, EventArgs e)
