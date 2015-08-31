@@ -1,0 +1,53 @@
+﻿@using NewsSearch.Core
+@model ISearch
+
+@{
+    var source = Model;
+    var rc = 0;
+}
+
+@if (source.Error == null)
+{
+    if (source.Results != null)
+    {
+        foreach (var news in source.Results.OrderByDescending(x => x.PublicationDate))
+        {
+            rc++;
+            <div class="row-results-wrapper">
+                <div class="row">
+                    <div class="col-sm-3">
+                        <small class="text-info-grayedout">@news.PublicationDate.ToString("dd.MM.yyyy") </small>
+                    </div>
+                    <div class="col-sm-9">
+                        <a class="text-info" href="@news.WebUrl" target="_blank">@news.Title</a>
+                        @if (!string.IsNullOrEmpty(news.SubSourceName))
+                        {
+                            <div class="newsSubSource">
+                                @{
+                            var subSource = !string.IsNullOrEmpty(news.SubSourceDomain) ? news.SubSourceDomain : news.SubSourceName;
+                            if (!subSource.ToLower().Contains("http"))
+                            {
+                                subSource = "http://" + subSource;
+                            }
+                                }
+                                <a href="@subSource" target="_blank">@news.SubSourceName</a>
+                            </div>
+                        }
+                    </div>
+                </div>
+            </div>
+            if (rc == 10)
+            {
+                break;
+            }
+        }
+    }
+    else
+    {
+        <div class="alert alert-warning">No results from this source</div>
+    }
+}
+else
+{
+    <div class="alert alert-danger">@source.Error.Message</div>
+}

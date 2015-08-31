@@ -8,14 +8,16 @@ namespace NewsSearch.Core
 {
     public abstract class BaseSearch : ISearch
     {
-        protected BaseSearch(string apiBaseAddress, string apiQueryString, string sourceName)
+        protected BaseSearch(int id, string apiBaseAddress, string apiQueryString, string sourceName)
         {
+            Id = id;
             ApiBaseAddress = apiBaseAddress;
             ApiQueryString = apiQueryString;
             SourceName = sourceName;
 
             HeaderMapping = new Dictionary<string, Tuple<SearchFields, Func<string, object, object>>>();
             ResultMapping = new Dictionary<string, Tuple<ResultFields, Func<string, object, object>>>();
+            SearchStatus = EnumSearchStatus.NotInitiated;
         }
 
         public string ApiBaseAddress { get; private set; }
@@ -32,6 +34,8 @@ namespace NewsSearch.Core
         public IDictionary<string, Tuple<ResultFields, Func<string, object, object>>> ResultMapping { get; private set; }
 
         #region ISearch Properties
+
+        public int Id { get; private set; }
 
         public string SourceName { get; private set; }
 
@@ -52,6 +56,8 @@ namespace NewsSearch.Core
         public IEnumerable<IResult> Results { get; set; }
 
         public Exception Error { get; set; }
+
+        public EnumSearchStatus SearchStatus { get; set; }
 
         #endregion
 
@@ -257,5 +263,6 @@ namespace NewsSearch.Core
         }
 
         #endregion
+
     }
 }

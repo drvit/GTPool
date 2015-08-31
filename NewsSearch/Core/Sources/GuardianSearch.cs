@@ -9,7 +9,8 @@ namespace NewsSearch.Core.Sources
     {
         // TODO: create a factory to create the Search Entities
         public GuardianSearch()
-            : base("http://content.guardianapis.com/", 
+            : base((int)EnumSources.TheGuardian, 
+                "http://content.guardianapis.com/", 
                 "search?q={0}&api-key=jhn82w8ge5n86jvghm4ud6tm", 
                 "The Guardian")
         { }

@@ -5,6 +5,7 @@ namespace NewsSearch.Core
 {
     public interface ISearch
     {
+        int Id { get; }
         string SourceName { get; }
         string ApiBaseAddress { get; }
         string ApiQueryString { get; }
@@ -20,6 +21,7 @@ namespace NewsSearch.Core
         void LoadError(Dictionary<string, object> error);
         IEnumerable<IResult> Results { get; set; }
         Exception Error { get; set; }
+        EnumSearchStatus SearchStatus { get; set; }
     }
 
     public enum SearchFields
@@ -37,5 +39,11 @@ namespace NewsSearch.Core
         OrderBy,
         Results,
         Error
+    }
+
+    public enum EnumSearchStatus
+    {
+        NotInitiated = 0,
+        Completed = 1
     }
 }

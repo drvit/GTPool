@@ -8,7 +8,8 @@ namespace NewsSearch.Core.Sources
     {
         // TODO: create a factory to create the Search Entities
         public SocialMentionSearch()
-            : base("http://api2.socialmention.com/",
+            : base((int)EnumSources.SocialMention, 
+                "http://api2.socialmention.com/",
                 "search?q={0}&f=json&lang=en&t=news",
                 "Social Mention")
         { }

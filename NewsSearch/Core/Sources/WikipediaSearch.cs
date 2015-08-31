@@ -12,7 +12,8 @@ namespace NewsSearch.Core.Sources
     public class WikipediaSearch : BaseSearch
     {
         public WikipediaSearch()
-            : base("https://en.wikipedia.org",
+            : base((int)EnumSources.Wikipedia, 
+                "https://en.wikipedia.org",
                 "/w/api.php?action=query&prop=extracts|info&format=json&exchars=400&exlimit=1&explaintext=&exsectionformat=plain&inprop=url%7Cdisplaytitle&rawcontinue=&titles=iron%20maiden&generator=search&gsrprop=snippet&gsroffset=0&gsrlimit=1&gsrsearch={0}",
                 "Wikipedia")
         { }

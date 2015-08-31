@@ -102,4 +102,7 @@ footer a:hover {
 .hidden {
   display: none;
 }
+.ajax-preloader {
+  background: url("images/ajax-preloader-gray.GIF") no-repeat center;
+}
 /*# sourceMappingURL=sitebase.css.map */

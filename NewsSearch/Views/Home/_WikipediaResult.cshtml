@@ -1,0 +1,13 @@
+﻿@using NewsSearch.Core
+@model ISearch
+
+@{
+    var wiki = Model;
+    if (wiki != null && wiki.Results != null)
+    {
+        var wikires = wiki.Results.First();
+        <h4><a class="text-primary" href="@wikires.WebUrl" target="_blank">@Html.Raw(@wikires.Title)</a></h4>
+        <span>@Html.Raw(@wikires.Extract)</span>
+        <h6><small class="text-info-grayedout">@wikires.PublicationDate.ToString("dd.MM.yyyy")</small></h6>
+    }
+}

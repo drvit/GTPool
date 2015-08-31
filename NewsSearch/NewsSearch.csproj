@@ -146,6 +146,7 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\WebApiConfig.cs" />
     <Compile Include="Controllers\BaseController.cs" />
+    <Compile Include="Core\EnumSources.cs" />
     <Compile Include="Core\Result.cs" />
     <Compile Include="Core\Services\ApiHelper.cs" />
     <Compile Include="Controllers\HomeController.cs" />
@@ -162,6 +163,7 @@
     <Compile Include="Core\ISearch.cs" />
     <Compile Include="Core\BaseSearch.cs" />
     <Compile Include="Core\BaseResult.cs" />
+    <Compile Include="Infrastructure\Utils\GlobalCache.cs" />
     <Compile Include="Models\SearchViewModel.cs" />
     <Compile Include="Core\Sources\SocialMentionSearch.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -258,6 +260,8 @@
       <DependentUpon>cssreset.css</DependentUpon>
     </Content>
     <Content Include="Content\fonts\glyphicons-halflings-regular.svg" />
+    <Content Include="Content\images\ajax-preloader-gray.GIF" />
+    <Content Include="Content\images\ajax-preloader-white.GIF" />
     <Content Include="Content\sitebase.css">
       <DependentUpon>sitebase.less</DependentUpon>
     </Content>
@@ -1167,6 +1171,9 @@
       <DependentUpon>jquery.validate.min.js</DependentUpon>
     </Content>
     <Content Include="Views\Shared\_GoogleAnalytics.cshtml" />
+    <Content Include="Views\Home\_SourceResult.cshtml" />
+    <Content Include="Views\Home\_WikipediaResult.cshtml" />
+    <Content Include="Views\Home\_NoResults.cshtml" />
   </ItemGroup>
   <ItemGroup>
     <Folder Include="App_Data\" />

@@ -1,5 +1,4 @@
-﻿@using System.Globalization
-@using NewsSearch.Core
+﻿@using NewsSearch.Core
 @model NewsSearch.Models.SearchViewModel
 
 @*@{ ViewBag.Title = ".Search"; }*@
@@ -27,21 +26,17 @@
 
     <div class="container-fluid results-news">
         @{
-            var wiki = Model.SearchResults.FirstOrDefault(x => x.SourceName.Equals("wikipedia", StringComparison.InvariantCultureIgnoreCase));
-            if (wiki != null && wiki.Results != null)
+            var wiki = Model.SearchResults.FirstOrDefault(x => (EnumSources)x.Id == EnumSources.Wikipedia);
+            if (wiki != null)
             {
                 displayed.Add(wiki);
-                var wikires = wiki.Results.First();
                 <h3>@wiki.SourceName</h3>
-                <h4><a class="text-primary" href="@wikires.WebUrl" target="_blank">@Html.Raw(@wikires.Title)</a></h4>
-                <span>@Html.Raw(@wikires.Extract)</span>
-                <h6><small class="text-info-grayedout">@wikires.PublicationDate.ToString("dd.MM.yyyy")</small></h6>
+                <div id="@wiki.Id" class="well lazy-loading ajax-preloader"></div>
             }
         }
     </div>
 
     const int cols = 3;
-    var rc = 0;
 
     while (displayed.Count < Model.SearchResults.Count)
     {
@@ -55,52 +50,7 @@
                     <div class="col-sm-4">
                         <div class="container-fluid">
                             <h3>@source.SourceName</h3>
-                            @if (source.Error == null)
-                            {
-                                if (source.Results != null)
-                                {
-                                    foreach (var news in source.Results.OrderByDescending(x => x.PublicationDate))
-                                    {
-                                        rc++;
-                                        <div class="row-results-wrapper">
-                                            <div class="row">
-                                                <div class="col-sm-3">
-                                                    <small class="text-info-grayedout">@news.PublicationDate.ToString("dd.MM.yyyy") </small>
-                                                </div>
-                                                <div class="col-sm-9">
-                                                    <a class="text-info" href="@news.WebUrl" target="_blank">@news.Title</a>
-                                                    @if (!string.IsNullOrEmpty(news.SubSourceName))
-                                                    {
-                                                        <div class="newsSubSource">
-                                                            @{
-                                                                var subSource = !string.IsNullOrEmpty(news.SubSourceDomain) ? news.SubSourceDomain : news.SubSourceName;
-                                                                if (!subSource.ToLower().Contains("http"))
-                                                                {
-                                                                    subSource = "http://" + subSource;
-                                                                }
-                                                            }
-                                                            <a href="@subSource" target="_blank">@news.SubSourceName</a>
-                                                        </div>
-                                                    }
-                                                </div>
-                                            </div>
-                                        </div>
-                                        if (rc == 10)
-                                        {
-                                            break;
-                                        }
-                                    }
-                                    rc = 0;
-                                }
-                                else
-                                {
-                                    <div class="alert alert-warning">No results from this source</div>
-                                }
-                            }
-                            else
-                            {
-                                <div class="alert alert-danger">@source.Error.Message</div>
-                            }
+                            <div id="@source.Id" class="well lazy-loading ajax-preloader"></div>
                         </div>
                     </div>
                     if (c == cols)
@@ -109,7 +59,6 @@
                     }
                 }
             </div>
-
         </div>
     }
 }
@@ -118,7 +67,8 @@
     @Scripts.Render("~/bundles/searchnews")
     <script type="text/javascript">
         $(function () {
-            SN.SearchNews.init();
+            SN.SearchNews.init({ sourceResultUrl: "@Url.Action("GetSourceResult", "Home")" });
+            SN.SearchNews.loadSourceResult();
         });
     </script>
 }

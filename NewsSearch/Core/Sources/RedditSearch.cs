@@ -8,9 +8,10 @@ namespace NewsSearch.Core.Sources
 {
     public class RedditSearch : BaseSearch
     {
-                // TODO: create a factory to create the Search Entities
+        // TODO: create a factory to create the Search Entities
         public RedditSearch()
-            : base("http://www.reddit.com/",
+            : base((int)EnumSources.Reddit, 
+                "http://www.reddit.com/",
                 "search.json?q={0}", 
                 "Reddit")
         { }

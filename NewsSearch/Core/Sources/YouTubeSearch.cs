@@ -9,7 +9,8 @@ namespace NewsSearch.Core.Sources
     public class YouTubeSearch : BaseSearch
     {
         public YouTubeSearch()
-            : base("https://www.googleapis.com/youtube/v3/",
+            : base((int)EnumSources.YouTube, 
+                "https://www.googleapis.com/youtube/v3/",
                 "search?safeSearch=moderate&order=relevance&part=snippet&q={0}&relevanceLanguage=en&maxResults=10&key=AIzaSyBTi_oeX4kZBmtF3lLbVhcjimXCTnvIt_E",
                 "YouTube")
         { }
