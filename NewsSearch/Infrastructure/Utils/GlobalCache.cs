@@ -5,6 +5,7 @@ using System.Linq;
 using System.Threading;
 using System.Web;
 using GTPool;
+using GTP = GTPool.GenericThreadPool;
 
 namespace NewsSearch.Infrastructure.Utils
 {
@@ -23,6 +24,7 @@ namespace NewsSearch.Infrastructure.Utils
             if (_job == null)
             {
                 _job = new ManagedJob((Action)GarbageCollector);
+                GTP.AddJob(_job);
             }
         }
 
