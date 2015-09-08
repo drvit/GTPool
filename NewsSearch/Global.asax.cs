@@ -8,6 +8,7 @@ using System.Web.Optimization;
 using System.Web.Routing;
 using GTPool;
 using NewsSearch.Infrastructure.Utils;
+using NewsSearch.Models;
 using GTP = GTPool.GenericThreadPool;
 
 namespace NewsSearch
@@ -35,6 +36,8 @@ namespace NewsSearch
         {
             // To fix an issue with creating a new session for every request
             Session["init"] = 0;
+
+            Utils.Log(string.Format("Session Starting: {0}", new SessionLog(HttpContext.Current)));
         }
 
         //protected void Application_Error(object sender, EventArgs e)

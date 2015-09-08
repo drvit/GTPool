@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using AutoMapper;
+using NewsSearch.Infrastructure.Utils;
 
 namespace NewsSearch.Core.Sources
 {
@@ -11,8 +12,8 @@ namespace NewsSearch.Core.Sources
         public GuardianSearch()
             : base((int)EnumSources.TheGuardian, 
                 "http://content.guardianapis.com/", 
-                "search?q={0}&api-key=jhn82w8ge5n86jvghm4ud6tm", 
-                "The Guardian")
+                "search?q={0}&api-key=jhn82w8ge5n86jvghm4ud6tm",
+                EnumSources.TheGuardian.ToDescription())
         { }
 
         public override void LoadResponse(Dictionary<string, object> apiResponse)

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using AutoMapper;
+using NewsSearch.Infrastructure.Utils;
 
 namespace NewsSearch.Core.Sources
 {
@@ -11,7 +12,7 @@ namespace NewsSearch.Core.Sources
             : base((int)EnumSources.SocialMention, 
                 "http://api2.socialmention.com/",
                 "search?q={0}&f=json&lang=en&t=news",
-                "Social Mention")
+                EnumSources.SocialMention.ToDescription())
         { }
 
         public override void LoadResponse(Dictionary<string, object> apiResponse)

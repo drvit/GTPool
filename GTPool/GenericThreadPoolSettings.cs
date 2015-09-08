@@ -22,8 +22,7 @@ namespace GTPool
         public GenericThreadPoolSettings(int minThreads, int maxThreads, int idleTime)
         {
             MaxThreads = Math.Min(Math.Max(DefaultMinThreads, maxThreads), MaxMaxThreads);
-            MinThreads = Math.Max(Math.Min(DefaultMaxThreads, minThreads), DefaultMinThreads);
-            MinThreads = Math.Min(MinThreads, MaxThreads);
+            MinThreads = Math.Max(Math.Min(MaxThreads, minThreads), DefaultMinThreads);
             IdleTime = Math.Min(Math.Max(MinIdleTime, idleTime), MaxIdleTime);
         }
 

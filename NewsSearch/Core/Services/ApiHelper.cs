@@ -23,20 +23,19 @@ namespace NewsSearch.Core.Services
                     search.Query = HttpUtility.UrlEncode(query);
                     var response = client.GetAsync(search.ApiQueryString).Result;
 
+                    search.ResponseStatusCode = response.StatusCode;
                     response.EnsureSuccessStatusCode();
                     var result = response.Content.ReadAsStringAsync().Result;
-
+                    
                     if (response.IsSuccessStatusCode && !string.IsNullOrEmpty(result) && result.Contains("{"))
                     {
                         var jsonSerializer = new JavaScriptSerializer();
 
                         search.LoadResponse(jsonSerializer.DeserializeObject(result) as Dictionary<string, object>);
-
-                        return search;
                     }
                 }
             }
-            return null;
+            return search;
         }
     }
 }

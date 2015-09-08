@@ -84,7 +84,7 @@ namespace GTPool
         public void DoWork()
         {
             Status = WorkStatus.InProgress;
-            Utils.Log("Thread Working");
+            //Utils.Log("Thread Working");
             
             object result = null;
 
@@ -128,7 +128,7 @@ namespace GTPool
                 ? WorkStatus.Failed
                 : WorkStatus.Finished;
 
-            Utils.Log("Thread Finished Working");
+            //Utils.Log("Thread Finished Working");
         }
 
         private static object[] AddParameter(object param, object[] parameters)
@@ -181,12 +181,12 @@ namespace GTPool
                 var targetException = new GenericThreadPoolException(
                     GenericThreadPoolExceptionType.ManagedJobException, ex.InnerException ?? ex, Parameters);
 
-                Utils.Log(string.Format("{0}", errorMessage));
-                Utils.Log(string.Format("Error: {0}", targetException.InnerException));
+                //Utils.Log(string.Format("{0}", errorMessage));
+                //Utils.Log(string.Format("Error: {0}", targetException.InnerException));
 
                 if (onError != null)
                 {
-                    Utils.Log(string.Format("On Error {0}", errorMessage));
+                    //Utils.Log(string.Format("On Error {0}", errorMessage));
 
                     var mjd = new ManagedJobDelegate(onError, new object[] { targetException });
                     mjd.Invoke(null, errorMessage);

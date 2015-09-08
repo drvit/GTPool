@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using System.Web;
 using System.Web.Mvc;
 using GTPool;
@@ -27,20 +28,16 @@ namespace NewsSearch.Controllers
         {
             if (ModelState.IsValid)
             {
-                var sources = new List<ISearch>
-                {
-                    new WikipediaSearch(),
-                    new GuardianSearch(),
-                    new SocialMentionSearch(),
-                    new YouTubeSearch(),
-                    new RedditSearch()
-                };
+                var sources = GetSources();
 
                 var sessionId = HttpContext.Session != null
                     ? HttpContext.Session.SessionID
                     : Utils.GenerateUniqueNumber().ToString();
 
                 GlobalCache.Remove(sessionId);
+
+                Utils.Log((new SessionLog(System.Web.HttpContext.Current)).ToString());
+                Utils.Log(string.Format(">>>> Search query: \"{0}\"", model.SearchQuery));
 
                 foreach (var src in sources)
                 {
@@ -49,20 +46,34 @@ namespace NewsSearch.Controllers
                         parameters: new object[] {src, model.SearchQuery},
                         callback: ((Action<string, ISearch>) ((token, s) =>
                         {
+                            Utils.Log(string.Format("{0} returned results with status code {1}", 
+                                s.SourceName, s.ResponseStatusCode.ToString()));
+
                             s.SearchStatus = EnumSearchStatus.Completed;
                             GlobalCache.Add(token, s.Id.ToString(), s);
                         })),
                         callbackParameters: new object[] {sessionId},
                         onError: (ex =>
                         {
-                            var source = (ISearch) ex.JobParameters[0];
+                            Utils.Log(string.Format("{0}. Inner Exception: {1}", ex.Message, ex.InnerException.Message), true);
 
-                            sources.First(x => x.SourceName == source.SourceName)
-                                .LoadError(new Dictionary<string, object>
-                                    (StringComparer.InvariantCultureIgnoreCase)
-                                {
-                                    {"error", ex.InnerException}
-                                });
+                            if (ex.JobParameters == null) 
+                                return;
+
+                            var exSource = ex.JobParameters[0] as ISearch 
+                                           ?? ex.JobParameters[1] as ISearch;
+
+                            if (exSource == null) 
+                                return;
+
+                            exSource.SearchStatus = EnumSearchStatus.Completed;
+                            exSource.LoadError(new Dictionary<string, object>
+                                (StringComparer.InvariantCultureIgnoreCase)
+                            {
+                                {"error", ex.InnerException}
+                            });
+
+                            GlobalCache.Add(sessionId, exSource.Id.ToString(), exSource);
                         })));
                 }
 
@@ -73,45 +84,54 @@ namespace NewsSearch.Controllers
             return RedirectToAction("Index");
         }
 
+        private static List<ISearch> GetSources()
+        {
+            var sources = new List<ISearch>
+            {
+                new WikipediaSearch(),
+                new GuardianSearch(),
+                new SocialMentionSearch(),
+                new YouTubeSearch(),
+                new RedditSearch()
+            };
+
+            return sources;
+        }
+
         [HttpGet]
         public PartialViewResult GetSourceResult(int id)
         {
             try
             {
-                if (Session != null)
+                if (Session == null || string.IsNullOrEmpty(Session.SessionID))
+                    return null;
+
+                var source = GlobalCache.GetOnce(Session.SessionID, id.ToString()) as ISearch;
+                if (source == null || source.SearchStatus != EnumSearchStatus.Completed)
+                    return null;
+
+
+                if (source.Results != null && source.Results.Any())
                 {
-                    var token = Session.SessionID;
-                    if (!string.IsNullOrEmpty(token))
+                    if ((EnumSources) id == EnumSources.Wikipedia)
                     {
-                        var source = GlobalCache.Get(token, id.ToString());
-                        if (source != null)
-                        {
-                            var src = (ISearch) source;
-                            if (src.SearchStatus == EnumSearchStatus.Completed
-                                && src.Results != null && src.Results.Any())
-                            {
-                                GlobalCache.Remove(token, id.ToString());
-
-                                if ((EnumSources) id == EnumSources.Wikipedia)
-                                {
-                                    return PartialView("_WikipediaResult", (ISearch) source);
-                                }
-
-                                return PartialView("_SourceResult", (ISearch) source);
-                            }
-
-                            return PartialView("_NoResults");
-                        }
+                        return PartialView("_WikipediaResult", source);
                     }
+
+                    return PartialView("_SourceResult", source);
                 }
+
+                ViewBag.ResponseText = "Nothing returned from this source!";
             }
             catch (Exception ex)
             {
-                Utils.Log("GetSourceResult Exception: " + ex.Message + " inner: " +
-                          (ex.InnerException != null ? ex.InnerException.Message : ""));
+                Utils.Log(string.Format("GetSourceResult Exception: {0} inner: {1}", ex.Message,
+                    (ex.InnerException != null ? ex.InnerException.Message : "")));
+
+                ViewBag.ResponseText = "Failed to get results from this source. Please, try again.";
             }
 
-            return null;
+            return PartialView("_NoResults");
         }
 
         public ActionResult Error()

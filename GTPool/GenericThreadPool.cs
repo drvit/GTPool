@@ -24,7 +24,7 @@ namespace GTPool
     /// 14. BONUS: On Error Callback method                     -- done
     /// 15. BONUS: Cancell All Tasks (Jobs)                     -- done
     /// 16. BONUS: Callback method on GTP Dispose               -- done
-    /// 17. BONUS: GTP also works in a Synchronous mode         -- done (two modes, sync or async, one has to be disposed before initializing the other)
+    /// 17. BONUS: Method to synchronize tasks                  -- done (AddJobs with grouping id and call WaitAllJobs)
     public sealed class GenericThreadPool : IDisposable
     {
         #region Private Variables
@@ -105,8 +105,8 @@ namespace GTPool
         {
             if (InitializeInstance(settings, disposeCallback, disposeCallbackParams))
             {
-                Utils.Log("###############################################");
-                Utils.Log("Generic Thread Pool Initialization");
+                //Utils.Log("###############################################");
+                //Utils.Log("Generic Thread Pool Initialization");
 
                 _current.LoadThreadPool(settings.MinThreads);
                 _current.CreateMonitor();
@@ -162,7 +162,7 @@ namespace GTPool
 
             if (_threads.Count < numberOfThreads)
             {
-                Utils.Log(string.Format("====== Attempting to create {0} threads ======", numberOfThreads));
+                //Utils.Log(string.Format("====== Attempting to create {0} threads ======", numberOfThreads));
 
                 while (_threads.Count < numberOfThreads && (JobsCount > 0 || Waiting))
                 {
@@ -178,7 +178,7 @@ namespace GTPool
                     _threads[threadName].Start();
                     TotalThreadsCreated++;
 
-                    Utils.Log(string.Format("<<<<< Thread {0} created >>>>>>", threadName));
+                    //Utils.Log(string.Format("<<<<< Thread {0} created >>>>>>", threadName));
                 }
             }
         }
@@ -211,12 +211,12 @@ namespace GTPool
                         _waitingThreadsCount++;
                     }
 
-                    Utils.Log("Thread going to sleep");
+                    //Utils.Log("Thread going to sleep");
 
                     _threads[tname].Wait(_queueLocker, Settings.IdleTime, 
                         Waiting && _threads.Count <= Settings.MinThreads);
 
-                    Utils.Log("Thread woke up");
+                    //Utils.Log("Thread woke up");
 
                     lock (_variableLocker)
                     {
@@ -233,7 +233,7 @@ namespace GTPool
             ManagedThread mt;
             _threads.TryRemove(tname, out mt);
 
-            Utils.Log(">>>>>> Thread destroyed <<<<<<");
+            //Utils.Log(">>>>>> Thread destroyed <<<<<<");
         }
 
         public static void WaitAllJobs(int groupedById)
@@ -256,12 +256,12 @@ namespace GTPool
             if (_current._waitHandlers.TryGetValue(groupedById, out groupedJobsHandlers)
                 && groupedJobsHandlers != null)
             {
-                Utils.Log(string.Format("?????? Waiting all jobs grouped by id {0} to finish", groupedById));
+                //Utils.Log(string.Format("?????? Waiting all jobs grouped by id {0} to finish", groupedById));
 
                 WaitHandle.WaitAll(groupedJobsHandlers.ToArray(), 30000);
                 _current._waitHandlers.Remove(groupedById);
 
-                Utils.Log(string.Format("!!!!!! Waiting all jobs grouped by id {0} have finished", groupedById));
+                //Utils.Log(string.Format("!!!!!! Waiting all jobs grouped by id {0} have finished", groupedById));
             }
         }
 
@@ -335,7 +335,7 @@ namespace GTPool
                 }
 
                 queue.Enqueue(jobwh);
-                Utils.Log(string.Format("++++++ Job added to GTP JobId: {0} ++++++", jobwh.Current.JobId));
+                //Utils.Log(string.Format("++++++ Job added to GTP JobId: {0} ++++++", jobwh.Current.JobId));
 
                 Waiting = false;
                 Monitor.Pulse(_queueLocker);
@@ -364,7 +364,7 @@ namespace GTPool
                         if (_ignoredJobs.Contains(jobwh.Current.JobId))
                         {
                             _ignoredJobs.Remove(jobwh.Current.JobId);
-                            Utils.Log(string.Format("------ Ignored Job {0} ------", jobwh.Current.JobId));
+                            //Utils.Log(string.Format("------ Ignored Job {0} ------", jobwh.Current.JobId));
                             return null;
                         }
 
@@ -411,9 +411,9 @@ namespace GTPool
                 {
                     GtpMonitor();
                 }
-                catch (Exception ex)
+                catch (Exception)
                 {
-                    Utils.Log(string.Format("GenericThreadPool Thread Monitor failed with exception: {0}", ex.Message));
+                    //Utils.Log(string.Format("GenericThreadPool Thread Monitor failed with exception: {0}", ex.Message));
 
                     if (_monitorFailureCount > 1)
                     {
@@ -422,7 +422,7 @@ namespace GTPool
                     }
 
                     _monitorFailureCount++;
-                    Utils.Log(string.Format("GenericThreadPool will attempt to restart the GTP Thread Monitor ({0}/2)...", _monitorFailureCount));
+                    //Utils.Log(string.Format("GenericThreadPool will attempt to restart the GTP Thread Monitor ({0}/2)...", _monitorFailureCount));
 
                     CreateMonitor();
                 }
@@ -449,7 +449,7 @@ namespace GTPool
 
         private void GtpMonitor()
         {
-            Utils.Log(":::::: Starting GTP Monitor ::::::");
+            //Utils.Log(":::::: Starting GTP Monitor ::::::");
 
             while (!DisposingThreads)
             {
@@ -460,7 +460,7 @@ namespace GTPool
                         lock (_queueLocker)
                         {
                             Monitor.Pulse(_queueLocker);
-                            Utils.Log("(((((( Pulse ))))))");
+                            //Utils.Log("(((((( Pulse ))))))");
                         }
                     }
                     else
@@ -479,7 +479,7 @@ namespace GTPool
                 }
             }
 
-            Utils.Log(":::::: Shutting down GTP Monitor ::::::");
+            //Utils.Log(":::::: Shutting down GTP Monitor ::::::");
         }
 
         #endregion
@@ -633,7 +633,7 @@ namespace GTPool
 
         private void InternalDispose(bool silently = false)
         {
-            Utils.Log("...... Disposing ......");
+            //Utils.Log("...... Disposing ......");
 
             if (Settings == null)
             {
@@ -677,9 +677,9 @@ namespace GTPool
             _threads = null;
             Settings = null;
 
-            Utils.Log("Generic Thread Pool Disposed");
-            Utils.Log(string.Format("Summary: {0} Threads Created; {1} Threads Consumed; {2} Jobs Added; {3} Jobs Processed;", TotalThreadsCreated, TotalThreadsUsed, TotalJobsAdded, TotalJobsProcessed));
-            Utils.Log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
+            //Utils.Log("Generic Thread Pool Disposed");
+            //Utils.Log(string.Format("Summary: {0} Threads Created; {1} Threads Consumed; {2} Jobs Added; {3} Jobs Processed;", TotalThreadsCreated, TotalThreadsUsed, TotalJobsAdded, TotalJobsProcessed));
+            //Utils.Log("~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~");
         }
 
         #endregion

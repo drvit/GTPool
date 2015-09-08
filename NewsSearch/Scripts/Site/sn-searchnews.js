@@ -21,7 +21,7 @@
             .removeClass("well")
             .removeClass("ajax-preloader")
             .addClass("alert alert-danger")
-            .text("Failed to load results");
+            .text("Timed out to load results");
     };
 
     sn._lazyLoadContent = function (url, queryString, placeholder, attempts, secTimeOut) {

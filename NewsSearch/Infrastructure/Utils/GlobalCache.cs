@@ -75,6 +75,19 @@ namespace NewsSearch.Infrastructure.Utils
             return rep != null ? rep.GetFieldValue(key) : null;
         }
 
+        public static object GetOnce(string token, string key)
+        {
+            var rep = _repository.FirstOrDefault(x => Equals(x.Token, token));
+            
+            if (rep == null) 
+                return null;
+
+            var ret = rep.GetFieldValue(key);
+            Remove(token, key);
+
+            return ret;
+        }
+
         public static void Remove(string token, string key)
         {
             var rep = _repository.FirstOrDefault(x => Equals(x.Token, token));

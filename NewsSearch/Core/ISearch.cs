@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Net;
 
 namespace NewsSearch.Core
 {
@@ -17,6 +18,7 @@ namespace NewsSearch.Core
         int CurrentPage { get; set; }
         int Pages { get; set; }
         string OrderBy { get; set; }
+        HttpStatusCode ResponseStatusCode { get; set; }
         void LoadResponse(Dictionary<string, object> apiResponse);
         void LoadError(Dictionary<string, object> error);
         IEnumerable<IResult> Results { get; set; }

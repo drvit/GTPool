@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net;
 using GTPool;
 using NewsSearch.Infrastructure.Utils;
 
@@ -52,6 +53,8 @@ namespace NewsSearch.Core
         public int Pages { get; set; }
 
         public string OrderBy { get; set; }
+
+        public HttpStatusCode ResponseStatusCode { get; set; }
 
         public IEnumerable<IResult> Results { get; set; }
 

@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading;
-using System.Threading.Tasks;
+﻿using System.Threading;
 
 namespace GTPool.App
 {
@@ -13,13 +8,13 @@ namespace GTPool.App
 
         public Fibonacci(int n)
         {
-            _n = n;
+            N = n;
             _doneEvent = null;
         }
 
         public Fibonacci(int n, ManualResetEvent doneEvent)
         {
-            _n = n;
+            N = n;
             _doneEvent = doneEvent;
         }
 
@@ -27,9 +22,9 @@ namespace GTPool.App
         public void ThreadPoolCallback(object threadContext)
         {
             var threadIndex = (int)threadContext;
-            Console.WriteLine("thread {0} started...", threadIndex);
-            _fibOfN = Calculate(_n);
-            Console.WriteLine("thread {0} result calculated...", threadIndex);
+            //Console.WriteLine("thread {0} started...", threadIndex);
+            FibOfN = Calculate(N);
+            //Console.WriteLine("thread {0} result calculated...", threadIndex);
 
             if (_doneEvent != null)
                 _doneEvent.Set();
@@ -46,10 +41,7 @@ namespace GTPool.App
             return Calculate(n - 1) + Calculate(n - 2);
         }
 
-        public int N { get { return _n; } }
-        private int _n;
-
-        public int FibOfN { get { return _fibOfN; } }
-        private int _fibOfN;
+        public int N { get; private set; }
+        public int FibOfN { get; private set; }
     }
 }
