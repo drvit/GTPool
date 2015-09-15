@@ -14,7 +14,7 @@
             {
                 var f = new Fibonacci(i + fibonacciSeed);
                 fibArray[i] = f;
-                f.ThreadPoolCallback(i);
+                f.Calculate();
             }
 
             // Wait for all threads in pool to calculation...

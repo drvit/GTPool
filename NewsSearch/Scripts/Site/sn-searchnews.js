@@ -2,10 +2,9 @@
 
 (function (sn, $, undefined) {
 
-    sn.loadSourceResult = function() {
+    sn.loadSourceResult = function () {
         $(".lazy-loading").each(function () {
             var $this = $(this);
-
             var queryString = { id: $this.attr("id") };
 
             setTimeout(function () { 
@@ -15,15 +14,6 @@
         });
     };
 
-    sn._onLazyLoadFail = function(placeholder, secTimeOut) {
-        clearTimeout(secTimeOut);
-        placeholder
-            .removeClass("well")
-            .removeClass("ajax-preloader")
-            .addClass("alert alert-danger")
-            .text("Timed out to load results");
-    };
-
     sn._lazyLoadContent = function (url, queryString, placeholder, attempts, secTimeOut) {
 
         // security in case the call fails, the placeholder with 
@@ -31,8 +21,8 @@
         if (secTimeOut == null) {
             secTimeOut = setTimeout(function () {
                 sn.options.stopLazyLoading = true;
-                sn._onLazyLoadFail(placeholder, secTimeOut);
-            }, 45000);
+                sn._onLazyLoadFail(placeholder, secTimeOut, "Timed out to load results");
+            }, 60000);
         }
 
         $.ajax({
@@ -41,7 +31,6 @@
             dataType: "html",
             cache: false,
             data: queryString
-
         }).done(function(data) {
             if (data != null && $.trim(data) !== "") {
                 clearTimeout(secTimeOut);
@@ -64,11 +53,13 @@
         });
     };
 
-    sn.alwaysFocusOnSearch = function () {
-        $("html").keydown(function () {
-            //$(this).animate({ border: "1px solid orange" }, "slow");
-            $("#SearchQuery").focus();
-        });
+    sn._onLazyLoadFail = function (placeholder, secTimeOut, message) {
+        clearTimeout(secTimeOut);
+        placeholder
+            .removeClass("well")
+            .removeClass("ajax-preloader")
+            .addClass("alert alert-danger")
+            .text(message || "Failed to load results");
     };
 
     sn.options = {
@@ -79,8 +70,6 @@
 
     sn.init = function(options) {
         $.extend(true, sn.options, options);
-
-        //sn.alwaysFocusOnSearch();
 
         $("form").submit(function (event) {
             if ($.trim($("#SearchQuery").val()) === "")

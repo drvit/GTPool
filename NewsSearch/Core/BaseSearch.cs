@@ -98,17 +98,18 @@ namespace NewsSearch.Core
                 if (header.Value.Item1 != SearchFields.Results)
                 {
                     object value;
-                    if (TryGetSourceFieldValue(response, header.Key, out value))
-                    {
-                        var formatedValue = header.Value.Item2 != null
-                            ? header.Value.Item2(header.Value.Item1.ToString(), value)
-                            : value;
 
-                        if (!TrySetProperyValue(this, header.Value.Item1.ToString(), formatedValue))
-                        {
-                            Utils.Log(string.Format("News Search Site: Failed to load {0} property value {1}", 
-                                SourceName, header.Value.Item1));
-                        }
+                    if (!TryGetSourceFieldValue(response, header.Key, out value)) 
+                        continue;
+
+                    var formatedValue = header.Value.Item2 != null
+                        ? header.Value.Item2(header.Value.Item1.ToString(), value)
+                        : value;
+
+                    if (!TrySetProperyValue(this, header.Value.Item1.ToString(), formatedValue))
+                    {
+                        Utils.Log(string.Format("News Search Site: Failed to load {0} property value {1}", 
+                            SourceName, header.Value.Item1));
                     }
                 }
                 else if (response.ContainsKey(header.Key))
@@ -137,14 +138,14 @@ namespace NewsSearch.Core
                 foreach (var result in ResultMapping)
                 {
                     object value;
-                    if (TryGetSourceFieldValue(searchResult, result.Key, out value))
-                    {
-                        var formatedValue = result.Value.Item2 != null
-                            ? result.Value.Item2(result.Value.Item1.ToString(), value)
-                            : value;
+                    if (!TryGetSourceFieldValue(searchResult, result.Key, out value)) 
+                        continue;
 
-                        TrySetProperyValue(newResult, result.Value.Item1.ToString(), formatedValue);
-                    }
+                    var formatedValue = result.Value.Item2 != null
+                        ? result.Value.Item2(result.Value.Item1.ToString(), value)
+                        : value;
+
+                    TrySetProperyValue(newResult, result.Value.Item1.ToString(), formatedValue);
                 }
 
                 res.Add(newResult);

@@ -1,19 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using AutoMapper;
 using NewsSearch.Infrastructure.Utils;
 
 namespace NewsSearch.Core.Sources
 {
     public class GuardianSearch : BaseSearch
     {
-        // TODO: create a factory to create the Search Entities
-        public GuardianSearch()
-            : base((int)EnumSources.TheGuardian, 
-                "http://content.guardianapis.com/", 
-                "search?q={0}&api-key=jhn82w8ge5n86jvghm4ud6tm",
-                EnumSources.TheGuardian.ToDescription())
+        public GuardianSearch(string apiBaseAddress, string apiQueryString)
+            : base((int)EnumSources.TheGuardian, apiBaseAddress, 
+            apiQueryString, EnumSources.TheGuardian.ToDescription())
         { }
 
         public override void LoadResponse(Dictionary<string, object> apiResponse)

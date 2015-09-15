@@ -1,0 +1,88 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<ClassDiagram MajorVersion="1" MinorVersion="1" GroupingSetting="Access">
+  <Class Name="GTPool.GenericThreadPool">
+    <Position X="4.5" Y="5" Width="2" />
+    <Compartments>
+      <Compartment Name="Private" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AkACgEgAECAEAAAAgACKSQQAg0CACKgAmLqGRNQiEAQ=</HashCode>
+      <FileName>GenericThreadPool.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="GTPool.GenericThreadPoolException">
+    <Position X="4.5" Y="9.5" Width="3.25" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAAAAAAAAAAEAAAAAAAAAAAAAEAAAAAAAA=</HashCode>
+      <FileName>GenericThreadPoolException.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GTPool.GenericThreadPoolSettings">
+    <Position X="1" Y="6.25" Width="3" />
+    <Compartments>
+      <Compartment Name="Private" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>CAAgEAAAACAAAAAAAAAAAARAAABACAAAABAAAAAAAAA=</HashCode>
+      <FileName>GenericThreadPoolSettings.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GTPool.ManagedJob" BaseTypeListCollapsed="true">
+    <Position X="7" Y="6.5" Width="2.25" />
+    <Compartments>
+      <Compartment Name="Private" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>IAAQAAQUAAUAAQAAAAAAAAACAAAAAAAQAAAAAAAAAAA=</HashCode>
+      <FileName>ManagedJob.cs</FileName>
+    </TypeIdentifier>
+    <Lollipop Position="0.2" />
+  </Class>
+  <Class Name="GTPool.ManagedJobDelegate">
+    <Position X="8.25" Y="9.5" Width="2.75" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAAAAIAAAAAAAAACAAAAAAAAAAAIAAAAAAAAA=</HashCode>
+      <FileName>ManagedJob.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GTPool.ManagedJobWaitHandler">
+    <Position X="7" Y="4.25" Width="3" />
+    <TypeIdentifier>
+      <HashCode>AAAAAAAAEAQAAAAAAACAAAAAQAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>ManagedJobWaitHandler.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Class Name="GTPool.ManagedThread">
+    <Position X="2.25" Y="4" Width="1.75" />
+    <Compartments>
+      <Compartment Name="Private" Collapsed="true" />
+    </Compartments>
+    <TypeIdentifier>
+      <HashCode>AAAEAAAEACAAAAAAAAAAAAAAAAQAAAIAAAAEAAAAAAA=</HashCode>
+      <FileName>ManagedThread.cs</FileName>
+    </TypeIdentifier>
+  </Class>
+  <Interface Name="GTPool.IManagedJob">
+    <Position X="4.75" Y="2.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AAAQAAAUAAUAAQAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>IManagedJob.cs</FileName>
+    </TypeIdentifier>
+  </Interface>
+  <Enum Name="GTPool.GenericThreadPoolExceptionType">
+    <Position X="1.5" Y="8.75" Width="2.5" />
+    <TypeIdentifier>
+      <HashCode>AABAABAAAAAAQAAQAAEAAAAQIEAAAAAAAAAAAAAAAAA=</HashCode>
+      <FileName>GenericThreadPoolException.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Enum Name="GTPool.WorkStatus">
+    <Position X="9.75" Y="6.5" Width="1.5" />
+    <TypeIdentifier>
+      <HashCode>AQAAAAAAAAAAAAAAAAQAAAAAAAAAAAAAABAAABAAAAA=</HashCode>
+      <FileName>ManagedJob.cs</FileName>
+    </TypeIdentifier>
+  </Enum>
+  <Font Name="Segoe UI" Size="9" />
+</ClassDiagram>

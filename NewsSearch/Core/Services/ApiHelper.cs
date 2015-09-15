@@ -18,7 +18,8 @@ namespace NewsSearch.Core.Services
                 {
                     client.BaseAddress = new Uri(search.ApiBaseAddress);
                     client.DefaultRequestHeaders.Accept.Clear();
-                    client.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+                    client.DefaultRequestHeaders.Accept.Add(
+                        new MediaTypeWithQualityHeaderValue("application/json"));
 
                     search.Query = HttpUtility.UrlEncode(query);
                     var response = client.GetAsync(search.ApiQueryString).Result;
@@ -27,11 +28,11 @@ namespace NewsSearch.Core.Services
                     response.EnsureSuccessStatusCode();
                     var result = response.Content.ReadAsStringAsync().Result;
                     
-                    if (response.IsSuccessStatusCode && !string.IsNullOrEmpty(result) && result.Contains("{"))
+                    if (response.IsSuccessStatusCode && 
+                        !string.IsNullOrEmpty(result) && result.Contains("{"))
                     {
-                        var jsonSerializer = new JavaScriptSerializer();
-
-                        search.LoadResponse(jsonSerializer.DeserializeObject(result) as Dictionary<string, object>);
+                        search.LoadResponse((new JavaScriptSerializer())
+                            .DeserializeObject(result) as Dictionary<string, object>);
                     }
                 }
             }

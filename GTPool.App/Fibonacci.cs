@@ -1,47 +1,41 @@
 ﻿using System.Threading;
-
 namespace GTPool.App
 {
     public class Fibonacci
     {
-        private readonly ManualResetEvent _doneEvent;
-
         public Fibonacci(int n)
         {
             N = n;
-            _doneEvent = null;
-        }
-
-        public Fibonacci(int n, ManualResetEvent doneEvent)
-        {
-            N = n;
-            _doneEvent = doneEvent;
         }
 
         // Wrapper method for use with thread pool.
-        public void ThreadPoolCallback(object threadContext)
+        public void ThreadPoolCalculate(object manualResetEvent)
         {
-            var threadIndex = (int)threadContext;
-            //Console.WriteLine("thread {0} started...", threadIndex);
-            FibOfN = Calculate(N);
-            //Console.WriteLine("thread {0} result calculated...", threadIndex);
+            var doneEvent = manualResetEvent as ManualResetEvent;
+            if (doneEvent != null)
+            { 
+                Calculate();
+                doneEvent.Set();
+            }
+        }
 
-            if (_doneEvent != null)
-                _doneEvent.Set();
+        public void Calculate()
+        {
+            FibOfN = CalculateFibonacciNumber(N);
         }
 
         // Recursive method that calculates the Nth Fibonacci number.
-        public int Calculate(int n)
+        private static int CalculateFibonacciNumber(int n)
         {
             if (n <= 1)
             {
                 return n;
             }
 
-            return Calculate(n - 1) + Calculate(n - 2);
+            return CalculateFibonacciNumber(n - 1) + CalculateFibonacciNumber(n - 2);
         }
 
-        public int N { get; private set; }
+        private int N { get; set; }
         public int FibOfN { get; private set; }
     }
 }

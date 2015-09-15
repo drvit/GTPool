@@ -1,20 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Web;
 using NewsSearch.Infrastructure.Utils;
-using WebGrease.Css.Extensions;
 
 namespace NewsSearch.Core.Sources
 {
     public class RedditSearch : BaseSearch
     {
-        // TODO: create a factory to create the Search Entities
-        public RedditSearch()
-            : base((int)EnumSources.Reddit, 
-                "http://www.reddit.com/",
-                "search.json?q={0}", 
-                EnumSources.Reddit.ToDescription())
+        public RedditSearch(string apiBaseAddress, string apiQueryString)
+            : base((int)EnumSources.Reddit, apiBaseAddress,
+            apiQueryString, EnumSources.Reddit.ToDescription())
         { }
 
         public override void LoadResponse(Dictionary<string, object> apiResponse)

@@ -88,11 +88,11 @@ namespace NewsSearch.Controllers
         {
             var sources = new List<ISearch>
             {
-                new WikipediaSearch(),
-                new GuardianSearch(),
-                new SocialMentionSearch(),
-                new YouTubeSearch(),
-                new RedditSearch()
+                new WikipediaSearch("https://en.wikipedia.org/", "w/api.php?action=query&prop=extracts|info&format=json&exchars=400&exlimit=1&explaintext=&exsectionformat=plain&inprop=url%7Cdisplaytitle&rawcontinue=&titles=iron%20maiden&generator=search&gsrprop=snippet&gsroffset=0&gsrlimit=1&gsrsearch={0}"),
+                new GuardianSearch("http://content.guardianapis.com/", "search?q={0}&api-key=jhn82w8ge5n86jvghm4ud6tm"),
+                new SocialMentionSearch("http://api2.socialmention.com/", "search?q={0}&f=json&lang=en&t=news"),
+                new YouTubeSearch("https://www.googleapis.com/youtube/v3/", "search?safeSearch=moderate&order=relevance&part=snippet&q={0}&relevanceLanguage=en&maxResults=10&key=AIzaSyBTi_oeX4kZBmtF3lLbVhcjimXCTnvIt_E"),
+                new RedditSearch("http://www.reddit.com/", "search.json?q={0}")
             };
 
             return sources;
@@ -110,15 +110,10 @@ namespace NewsSearch.Controllers
                 if (source == null || source.SearchStatus != EnumSearchStatus.Completed)
                     return null;
 
-
                 if (source.Results != null && source.Results.Any())
                 {
-                    if ((EnumSources) id == EnumSources.Wikipedia)
-                    {
-                        return PartialView("_WikipediaResult", source);
-                    }
-
-                    return PartialView("_SourceResult", source);
+                    return PartialView((EnumSources) id == EnumSources.Wikipedia 
+                        ? "_WikipediaResult" : "_SourceResult", source);
                 }
 
                 ViewBag.ResponseText = "Nothing returned from this source!";

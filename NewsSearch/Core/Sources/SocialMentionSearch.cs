@@ -1,18 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
-using AutoMapper;
 using NewsSearch.Infrastructure.Utils;
 
 namespace NewsSearch.Core.Sources
 {
     public class SocialMentionSearch : BaseSearch
     {
-        // TODO: create a factory to create the Search Entities
-        public SocialMentionSearch()
-            : base((int)EnumSources.SocialMention, 
-                "http://api2.socialmention.com/",
-                "search?q={0}&f=json&lang=en&t=news",
-                EnumSources.SocialMention.ToDescription())
+        public SocialMentionSearch(string apiBaseAddress, string apiQueryString)
+            : base((int)EnumSources.SocialMention, apiBaseAddress,
+            apiQueryString, EnumSources.SocialMention.ToDescription())
         { }
 
         public override void LoadResponse(Dictionary<string, object> apiResponse)
